@@ -1,0 +1,80 @@
+<html>
+<head>
+  <script src="../../bravo.js"></script>
+  <script src="console.js"></script>
+  <script>
+
+var tests = 
+[ 
+  "absolute", "cyclic", "determinism", "exactExports", 
+  "hasOwnProperty", "method", "missing", "monkeys", 
+  "nested", "relative", "transitive" 
+];
+
+
+  </script>
+
+</head>
+<body>
+<center>
+<form name=terminal>
+  <textarea id=stdout style="width:99%; height: 99%;" wrap="off" readonly>
+ *** BravoJS Interoperability Test Console
+</textarea>
+</form>
+</center>
+</body>
+<style type="text/css">
+TEXTAREA
+{
+  border: 3px solid #999999;
+  background: black;
+  color: limegreen;
+  padding: 5px;
+  font-family: terminal, fixed, lucida console, courier;
+  white-space: nowrap;
+}
+</style>
+<script>
+print = function(a)
+{
+  bravojs.print(a);
+}
+
+print("\n *** " + new Date());
+
+function runTest(testNumber)
+{
+  var testName = tests[testNumber];
+  if (!testName)
+    return;
+
+  bravojs.reset();
+  setTimeout((function() { print("\nRunning test " + testName); }),0);
+  bravojs.runExternalMainModule("tests/modules/1.0/" + testName + "/program", function() { runTest(testNumber + 1) });
+}
+
+window.onload = function()
+{
+  runTest(0);
+}
+
+/* window.onerror is noisy because we purposefully test ENOENT */
+delete window.onerror;
+if (window.onerror)
+  window.onerror = void 0;
+
+</script>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

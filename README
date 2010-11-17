@@ -1,0 +1,19 @@
+Welcome to BravoJS
+
+Copyright (c) 2010 PageMail, Inc.
+Released under the terms of the MIT License.
+
+BravoJS is an implementation of an unratified proposed draft for CommonJS 
+Modules/2.0
+
+The current draft this code is based on is located at 
+http://www.page.ca/~wes/CommonJS/modules-2.0-5/commonjs%20modules%202.0-5.pdf
+
+Caveat User: BravoJS is based on an early draft of an unratified CommonJS 
+specification. This means that using this product as it stands today will 
+most likely lead you to writing modules which are not compatible with any 
+other CommonJS platform.
+
+Wes Garland
+wes@page.ca
+
