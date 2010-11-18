@@ -1,3 +1,4 @@
+//alert('hello');
 module.declare([ "test", "submodule/a", "b" ], function(require, exports, module) {
 
 var test = require('test');

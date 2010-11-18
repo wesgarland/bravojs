@@ -22,7 +22,7 @@ bravojs.reset = function bravojs_reset()
 {
   bravojs.requireMemo 		= {};	/**< Module exports, indexed by canonical name */
   bravojs.moduleFactories	= {};	/**< Module factory functions, indexed by canonical name */
-  bravojs.mainModuleDir = bravojs.dirname(bravojs.URL_toId(window.location.href));
+  bravojs.mainModuleDir = bravojs.dirname(bravojs.URL_toId(window.location.href + ".js"));
 
   delete bravojs.Module.prototype.main;
 
@@ -44,15 +44,24 @@ bravojs.print = function bravojs_print()
 
   if ((stdout = document.getElementById('stdout')))
   {
+    output += "\r\n";
+
     if (typeof stdout.value !== "undefined")
     {
-      stdout.value += output + "\n";
+      stdout.value += output;
       if (stdout.focus)
 	stdout.focus();
-    }
 
-    if (stdout.tagName === "TEXTAREA")
-      stdout.scrollTop = stdout.scrollHeight;
+      if (stdout.tagName === "TEXTAREA")
+	stdout.scrollTop = stdout.scrollHeight;
+    }
+    else
+    {
+      if (typeof stdout.innerText !== "undefined")
+	stdout.innerText += "\n" + output;
+      else
+	stdout.textContent += output;
+    }
   }
   else if (console && console.print)
   {
@@ -79,7 +88,7 @@ bravojs.realpath = function bravojs_realpath(path)
   var newPath = [];
   var i;
 
-  if (path[path.length - 1] === '/')
+  if (path.charAt(path.length - 1) === '/')
     oldPath.push("INDEX");
 
   for (i = 0; i < oldPath.length; i++)
@@ -118,7 +127,7 @@ bravojs.dirname = function bravojs_dirname(path)
   if (typeof path !== "string")
     path = path.toString();
 
-  if (path[path.length - 1] === '/')
+  if (path.charAt(path.length - 1) === '/')
     return path.slice(0,-1);
 
   var s = path.split('/').slice(0,-1).join('/');
@@ -138,10 +147,10 @@ bravojs.makeModuleId = function makeModuleId(relativeModuleDir, moduleIdentifier
   if (moduleIdentifier === null)	/* Special case for main module */
     return null;
 
-  if (moduleIdentifier[0] === '/')
+  if (moduleIdentifier.charAt(0) === '/')
   {
     /* Absolute path. Not required by CommonJS but it makes dependency list optimization easier */
-    id = moduleIdentifier
+    id = moduleIdentifier;
   }
   else
   if ((moduleIdentifier.indexOf("./") == 0) || (moduleIdentifier.indexOf("../") == 0))
@@ -175,7 +184,7 @@ bravojs.URL_toId = function URL_toId(moduleURL)
   var i;
 
   /* Treat the whole web as our module repository.
-   * http://www.page.ca/a/b/module.js has id /www.page.ca/a/b/module.js. 
+   * 'http://www.page.ca/a/b/module.js' has id '/www.page.ca/a/b/module'. 
    */
   i = moduleURL.indexOf("://");
   if (i == -1)
@@ -187,6 +196,10 @@ bravojs.URL_toId = function URL_toId(moduleURL)
     id = id.slice(0, i);
   if ((i = id.indexOf('#')) != -1)
     id = id.slice(0, i);
+
+  if (id.slice(-3) != ".js")
+    throw new Error("Invalid module URL: " + moduleURL);
+  id = id.slice(0,-3);
 
   return id;
 }
@@ -283,8 +296,8 @@ bravojs.requireModule = function bravojs_requireModule(parentModuleDir, moduleId
   { 
     bravojs.errorReporter(e); 
   };
-  
-  if (!bravojs.requireMemo[idx])
+
+  if (!idx || !bravojs.requireMemo[idx])
     throw new Error("Module " + id + " is not available.");
 
   return bravojs.requireMemo[idx];
@@ -351,6 +364,8 @@ bravojs.Module = function bravojs_Module(id)
  */
 bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies, moduleFactory)
 {
+  var stm;
+
   if (typeof dependencies === "function")
   {
     moduleFactory = dependencies;
@@ -363,9 +378,13 @@ bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies,
     return;
   }
 
-  if (bravojs.scriptTagMemo.cname) 	/* IE, pulling from cache */
+  stm = bravojs.scriptTagMemoIE;
+  delete bravojs.scriptTagMemoIE;
+
+  if (bravojs.scriptTagMemoIE && bravojs.scriptTagMemoIE.id) 	/* IE, pulling from cache */
   {
-    bravojs.provideModule(dependencies, moduleFactory, bravojs.scriptTagMemo.id);
+    alert('XXX ie pulling from cache');
+    bravojs.provideModule(dependencies, moduleFactory, stm.id, stm.callback);
     return;
   }
 
@@ -375,13 +394,12 @@ bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies,
 
   for (i = 0; i < scripts.length; i++)
   {
-    if (scripts[i].readyState == "interactive")
+    if (scripts[i].readyState === "interactive")
     {
-      bravojs.provideModule(dependencies, moduleFactory, bravojs.URL_toId(scripts[i].src));
+      bravojs.provideModule(dependencies, moduleFactory, bravojs.URL_toId(scripts[i].src), stm.callback);
       return;
     }
   }
-
   throw new Error("Could not determine module's canonical name from script-tag loader");
 }
 
@@ -398,14 +416,18 @@ bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies,
 bravojs.Module.prototype.provide = function bravojs_Module_provide(dependencies, callback)
 {
   var self = arguments.callee;
+
   if ((typeof dependencies !== "object") || (dependencies.length !== 0 && !dependencies.length))
-    throw new Error("Invalid dependency array: " + dependencies.toSource());
+    throw new Error("Invalid dependency array: " + dependencies.toString());
 
   dependencies = bravojs.filterDependencies(dependencies);
 
   if (dependencies.length === 0)
   {
-    callback();
+    if (callback)
+      callback();
+    else
+      throw new Error("no callback after provide");
     return;
   }
 
@@ -424,20 +446,10 @@ bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, c
 {
   var script = document.createElement('SCRIPT');
   script.setAttribute("type","text/javascript");
-  script.setAttribute("src", require.canonicalize(moduleIdentifier) + "?1" + Date.now());
+  script.setAttribute("src", require.canonicalize(moduleIdentifier) + "?1");
 
   if (document.addEventListener)	/* Non-IE; see bravojs_Module_declare */
   {
-    script.onerror = function bravojs_lambda_script_onerror(e) 
-    { 
-      var id, idx, scripts
-
-      id = require.id(moduleIdentifier);
-      idx = bravojs.makeModuleIndex(id);
-      bravojs.moduleFactories[idx] = null;	/* Mark null so we don't try to run, but also don't try to reload */
-      callback();
-    }
-
     script.onload = function bravojs_lambda_script_onload()
     {
       /* stm contains info from recently-run module.declare() */
@@ -448,13 +460,57 @@ bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, c
       delete bravojs.scriptTagMemo;
       bravojs.provideModule(stm.dependencies, stm.moduleFactory, require.id(moduleIdentifier), callback);
     }
+
+    script.onerror = function bravojs_lambda_script_onerror() 
+    { 
+      var id, idx;
+
+      id = require.id(moduleIdentifier);
+      idx = bravojs.makeModuleIndex(id);
+      bravojs.moduleFactories[idx] = null;	/* Mark null so we don't try to run, but also don't try to reload */
+      callback();
+    }
   }
   else
   {
-    alert('XXX NOT YET IMPLEMENTED');
+    bravojs.scriptTagMemoIE = { moduleIdentifier: moduleIdentifier, callback: callback };
+
+    script.onreadystatechange = function bravojs_lambda_script_onreadystatechange()
+    {
+      if (this.readyState != "loaded")
+	return;
+
+      var id, idx;
+
+      id = require.id(moduleIdentifier);
+      idx = bravojs.makeModuleIndex(id);
+
+      if (!bravojs.moduleFactories[idx] && !bravojs.requireMemo[idx])
+      {
+	bravojs.moduleFactories[idx] = null;	/* Mark null so we don't try to run, but also don't try to reload */
+	setTimeout(function() { if (!bravojs.moduleFactories[idx]) callback() }, 1000);
+      }
+    }
   }
 
   document.getElementsByTagName("HEAD")[0].appendChild(script);
+}
+
+bravojs.es5_shim_then = function bravojs_es5_shim_then(callback)
+{
+  if (!Array.prototype.indexOf)
+  {
+    /* Load ES-5 shim into the environment before executing the main module */
+    var script = document.createElement('SCRIPT');
+    script.setAttribute("type","text/javascript");
+    script.setAttribute("src", bravojs.dirname(bravojs.url) + "/es5-shim.js");
+    script.onload = callback;
+    document.getElementsByTagName("HEAD")[0].appendChild(script);
+  }
+  else
+  {
+    callback();
+  }
 }
 
 /** Main module bootstrap */
@@ -468,7 +524,13 @@ bravojs.initializeMainModule = function bravojs_initializeMainModule(dependencie
 
   module.constructor.prototype.main = module;
 
-  bravojs.provideModule(dependencies, moduleFactory, moduleIdentifier, function bravojs_lambda_requireMain() { require(moduleIdentifier) });
+  bravojs.es5_shim_then
+  (
+    (function() 
+     {
+       bravojs.provideModule(dependencies, moduleFactory, moduleIdentifier, function bravojs_lambda_requireMain() { require(moduleIdentifier) })
+     })
+  ); 
 }
 
 /** Run a module which is not declared in the HTML document and make it the program module.
@@ -489,19 +551,22 @@ bravojs.runExternalMainModule = function bravojs_runExternalProgram(dependencies
 
   delete module.declare;
 
-  if (moduleIdentifier[0] === '/')
+  if (moduleIdentifier.charAt(0) === '/')
     bravojs.mainModuleDir = bravojs.dirname(moduleIdentifier);
   else
-    bravojs.mainModuleDir = bravojs.dirname(bravojs.URL_toId(window.location.href)) + "/" + bravojs.dirname(moduleIdentifier);
+    bravojs.mainModuleDir = bravojs.dirname(bravojs.URL_toId(window.location.href + ".js")) + "/" + bravojs.dirname(moduleIdentifier);
 
   moduleIdentifier = bravojs.basename(moduleIdentifier);
-  module.provide(dependencies.concat([moduleIdentifier]), 
-		 function bravojs_runMainModule() 
-		 {
-		   bravojs.initializeMainModule(dependencies, null, moduleIdentifier);
-		   if (callback)
-		     callback();
-		 });
+
+  bravojs.es5_shim_then(
+      function() {
+	module.provide(dependencies.concat([moduleIdentifier]), 
+		       function bravojs_runMainModule() {
+			 bravojs.initializeMainModule(dependencies, null, moduleIdentifier);
+			 if (callback)
+			   callback(); 
+		       })
+	    });
 }
 
 bravojs.reset();
@@ -558,10 +623,3 @@ module.declare = function main_module_declare(dependencies, moduleFactory)
 }
 
 } catch(e) { bravojs.errorReporter(e); }
-
-
-
-
-
-
-

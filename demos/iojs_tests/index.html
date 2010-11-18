@@ -16,23 +16,32 @@ var tests =
 
 </head>
 <body>
-<center>
-<form name=terminal>
-  <textarea id=stdout style="width:99%; height: 99%;" wrap="off" readonly>
- *** BravoJS Interoperability Test Console
-</textarea>
+<center style="height:99%">
+<form name=terminal style="height:100%">
+<script>
+if (window.navigator.userAgent.indexOf("MSIE") !== -1)
+  document.write('<xmp id=stdout></xmp>');
+else
+  document.write('<textarea id=stdout wrap="off" readonly></textarea>');
+</script>
 </form>
 </center>
 </body>
 <style type="text/css">
-TEXTAREA
+#stdout
 {
-  border: 3px solid #999999;
-  background: black;
-  color: limegreen;
-  padding: 5px;
+  width: 	99%;
+  text-align: 	left;
+  border: 	3px solid #999999;
+  background: 	black;
+  color: 	limegreen;
+  padding: 	5px;
   font-family: terminal, fixed, lucida console, courier;
-  white-space: nowrap;
+  //white-space: nowrap;
+}
+TEXTAREA#stdout
+{
+  height:	99%;
 }
 </style>
 <script>
@@ -60,9 +69,8 @@ window.onload = function()
 }
 
 /* window.onerror is noisy because we purposefully test ENOENT */
-delete window.onerror;
-if (window.onerror)
-  window.onerror = void 0;
+try { delete window.onerror } catch(e) {};
+try { if (window.onerror) window.onerror = void 0 } catch(e) {};
 
 </script>
 </html>
