@@ -38,5 +38,3 @@ if (!Array.prototype.indexOf)
   };
 }
 
-document.getElementsByTagName("SCRIPT")[3].onload();
-

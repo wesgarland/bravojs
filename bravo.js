@@ -68,11 +68,11 @@ bravojs.print = function bravojs_print()
 	stdout.textContent += output;
     }
   }
-  else if (console && console.print)
+  else if (typeof console === "object" && console.print)
   {
     console.print(output);
   }
-  else if (console && console.log)
+  else if (typeof console === "object" && console.log)
   {
     console.log(output);
   }
@@ -272,13 +272,16 @@ bravojs.initializeModule = function bravojs_initializeModule(id)
 
   var idx	    = bravojs.makeModuleIndex(id);
   var moduleFactory = bravojs.moduleFactories[idx];
+  var newRequire;
 
   delete bravojs.moduleFactories[idx];
   bravojs.requireMemo[idx] = {};
 
-  moduleFactory(bravojs.requireFactory(moduleDir), 	/* require */
+  newRequire = bravojs.requireFactory(moduleDir);
+
+  moduleFactory(newRequire,				/* require */
 		bravojs.requireMemo[idx],		/* exports */
-		new bravojs.Module(id));		/* module */
+		new bravojs.Module(id, require));	/* module */
 }
 
 /** Search the module memo and return the correct module's exports, or throw.
@@ -287,7 +290,7 @@ bravojs.initializeModule = function bravojs_initializeModule(id)
 bravojs.requireModule = function bravojs_requireModule(parentModuleDir, moduleIdentifier)
 {
   var id;
-  var idx;
+  var idx = false;
 
   try 
   {
@@ -302,7 +305,7 @@ bravojs.requireModule = function bravojs_requireModule(parentModuleDir, moduleId
     bravojs.errorReporter(e); 
   };
 
-  if (!idx || !bravojs.requireMemo[idx])
+  if (idx === false || !bravojs.requireMemo[idx])
     throw new Error("Module " + id + " is not available.");
 
   return bravojs.requireMemo[idx];
@@ -337,9 +340,10 @@ bravojs.requireFactory = function bravojs_requireFactory(moduleDir)
 }
 
 /** Module object constructor */
-bravojs.Module = function bravojs_Module(id)
+bravojs.Module = function bravojs_Module(id, require)
 {
   this.id   	 = id;
+  this.require	 = require;
   this.protected = void 0;
 }
 
@@ -369,12 +373,38 @@ bravojs.Module = function bravojs_Module(id)
  */
 bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies, moduleFactory)
 {
-  var stm;
+  var stm, i, el;
 
   if (typeof dependencies === "function")
   {
     moduleFactory = dependencies;
-    dependencies = null;
+    dependencies = [];
+  }
+
+  /* Create module.dependencies and module.deps arrays */
+  this.dependencies = [];
+  this.deps = {};
+
+  for (i=0; i < dependencies.length; i++)
+  {
+    if (typeof dependencies[i] === "string")
+    {
+      this.dependencies.push(dependencies[i]);
+      continue;
+    }
+
+    if (typeof dependencies[i] !== "object")
+      throw new Error("Invalid " + typeof dependencies[i] + " element in dependency array at position " + i);
+
+    /* Labelled dependency object */
+    for (el in dependencies[i])
+    {
+      if (dependencies[i].hasOwnProperty(el))
+      {
+	this.dependencies.push(dependencies[i][el]);
+	this.deps[el] = function() { this.require(el) };
+      }
+    }
   }
 
   if (document.addEventListener)	/* non-IE, defer work to script's onload event which will happen immediately */
@@ -512,8 +542,19 @@ bravojs.es5_shim_then = function bravojs_es5_shim_then(callback)
     /* Load ES-5 shim into the environment before executing the main module */
     var script = document.createElement('SCRIPT');
     script.setAttribute("type","text/javascript");
-    script.setAttribute("src", bravojs.dirname(bravojs.url) + "/es5-shim.js");
-    script.onload = callback;
+    script.setAttribute("src", bravojs.dirname(bravojs.url) + "/es5-shim.js?1");
+
+    if (document.addEventListener)
+      script.onload = callback;
+    else
+    {
+      script.onreadystatechange = function() 
+      {
+	if (this.readyState === "loaded")
+	  callback();
+      }
+    }
+
     document.getElementsByTagName("HEAD")[0].appendChild(script);
   }
   else
@@ -532,7 +573,6 @@ bravojs.initializeMainModule = function bravojs_initializeMainModule(dependencie
     throw new Error("Main module has already been initialized!");
 
   module.constructor.prototype.main = module;
-
   bravojs.es5_shim_then
   (
     (function() 
