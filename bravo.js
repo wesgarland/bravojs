@@ -25,6 +25,8 @@ bravojs.reset = function bravojs_reset()
   bravojs.mainModuleDir = bravojs.dirname(bravojs.URL_toId(window.location.href + ".js"));
 
   delete bravojs.Module.prototype.main;
+  delete bravojs.scriptTagMemo;
+  delete bravojs.scriptTagMemoIE;
 
   /** Extra-module environment */
   window.require = bravojs.requireFactory(bravojs.mainModuleDir);
@@ -381,7 +383,7 @@ bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies,
   stm = bravojs.scriptTagMemoIE;
   delete bravojs.scriptTagMemoIE;
 
-  if (bravojs.scriptTagMemoIE && bravojs.scriptTagMemoIE.id) 	/* IE, pulling from cache */
+  if (stm && stm.id) 	/* IE, pulling from cache */
   {
     alert('XXX ie pulling from cache');
     bravojs.provideModule(dependencies, moduleFactory, stm.id, stm.callback);
@@ -400,6 +402,7 @@ bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies,
       return;
     }
   }
+
   throw new Error("Could not determine module's canonical name from script-tag loader");
 }
 
@@ -480,15 +483,16 @@ bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, c
       if (this.readyState != "loaded")
 	return;
 
+      /* failed load below */
       var id, idx;
 
       id = require.id(moduleIdentifier);
       idx = bravojs.makeModuleIndex(id);
 
-      if (!bravojs.moduleFactories[idx] && !bravojs.requireMemo[idx])
+      if (!bravojs.moduleFactories[idx] && !bravojs.requireMemo[idx] && idx === bravojs.scriptTagMemoIE.moduleIdentifier)
       {
 	bravojs.moduleFactories[idx] = null;	/* Mark null so we don't try to run, but also don't try to reload */
-	setTimeout(function() { if (!bravojs.moduleFactories[idx]) callback() }, 1000);
+	callback();
       }
     }
   }
