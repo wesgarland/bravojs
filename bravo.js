@@ -18,6 +18,7 @@ if (!bravojs)
 
 try { 
 
+/** Reset the environment so that a new main module can be loaded */
 bravojs.reset = function bravojs_reset()
 {
   bravojs.requireMemo 		= {};	/**< Module exports, indexed by canonical name */
@@ -46,7 +47,7 @@ bravojs.print = function bravojs_print()
 
   if ((stdout = document.getElementById('stdout')))
   {
-    output += "\r\n";
+    output += "\n";
 
     if (typeof stdout.value !== "undefined")
     {
@@ -60,7 +61,9 @@ bravojs.print = function bravojs_print()
     else
     {
       if (typeof stdout.innerText !== "undefined")
-	stdout.innerText += "\n" + output;
+      {
+	stdout.innerText = stdout.innerText.slice(0,-1) + output + " "; 	/* IE normalizes trailing newlines away */
+      }
       else
 	stdout.textContent += output;
     }
@@ -385,7 +388,6 @@ bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies,
 
   if (stm && stm.id) 	/* IE, pulling from cache */
   {
-    alert('XXX ie pulling from cache');
     bravojs.provideModule(dependencies, moduleFactory, stm.id, stm.callback);
     return;
   }
@@ -500,6 +502,9 @@ bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, c
   document.getElementsByTagName("HEAD")[0].appendChild(script);
 }
 
+/** Shim the environment to have CommonJS ES-5 requirements (if needed),
+ *  the execute the callback
+ */
 bravojs.es5_shim_then = function bravojs_es5_shim_then(callback)
 {
   if (!Array.prototype.indexOf)
@@ -575,6 +580,11 @@ bravojs.runExternalMainModule = function bravojs_runExternalProgram(dependencies
 
 bravojs.reset();
 
+/** Set the BravoJS URL, so that BravoJS can load components
+ *  relative to its install dir.  The HTML script element that
+ *  loads BravoJS must either have the ID BravoJS, or be the
+ *  very first script in the document.
+ */ 
 (function bravojs_setURL()
 {
   var i;

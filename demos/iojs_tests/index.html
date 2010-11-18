@@ -18,8 +18,9 @@ var tests =
 <center style="height:99%">
 <form name=terminal style="height:100%">
 <script>
+/* IE does not have sane TEXTAREA support */
 if (window.navigator.userAgent.indexOf("MSIE") !== -1)
-  document.write('<xmp id=stdout></xmp>');
+  document.write('<tt id=stdout></tt>');
 else
   document.write('<textarea id=stdout wrap="off" readonly></textarea>');
 </script>
@@ -36,12 +37,14 @@ else
   color: 	limegreen;
   padding: 	5px;
   font-family: terminal, fixed, lucida console, courier;
-  //white-space: nowrap;
+  white-space: nowrap;
 }
+
 TEXTAREA#stdout
 {
   height:	99%;
 }
+
 </style>
 <script>
 print = function(a)
@@ -51,6 +54,7 @@ print = function(a)
 
 print("\n *** " + new Date());
 
+/** Simple, inductive test driver */
 function runTest(testNumber)
 {
   var testName = tests[testNumber];
