@@ -7,9 +7,9 @@
   </body>
   <script>
 
-module.declare(function(require, exports, module) {
+module.declare([ { area: "../area/area" } ], function(require, exports, module) {
 
-print("hello, world!!");
+  print("The area of a rectangle 3 x 4 units is " + require("area").rectangle(3,4));
 
 })
 

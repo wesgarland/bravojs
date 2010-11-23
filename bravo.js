@@ -303,7 +303,7 @@ bravojs.initializeModule = function bravojs_initializeModule(id)
 
   delete bravojs.pendingModuleDeclarations[idx];
 
-  require = bravojs.requireFactory(moduleDir);
+  require = bravojs.requireFactory(moduleDir, dependencies);
   exports = bravojs.requireMemo[idx] = {};
   module  = new bravojs.Module(id, dependencies);
 
@@ -340,10 +340,41 @@ bravojs.requireModule = function bravojs_requireModule(parentModuleDir, moduleId
 /** Create a new require function, closing over it's path so that relative
  *  modules work as expected.
  */
-bravojs.requireFactory = function bravojs_requireFactory(moduleDir)
+bravojs.requireFactory = function bravojs_requireFactory(moduleDir, dependencies)
 {
+  var deps, i, label;
+
+  function addLabeledDep(moduleIdentifier)
+  {
+    deps[label] = function bravojs_labeled_dependency() 
+    { 
+      return bravojs.requireModule(moduleDir, moduleIdentifier); 
+    }
+  }
+
+  if (dependencies)
+  {
+    for (i=0; i < dependencies.length; i++)
+    {
+      if (typeof dependencies[i] !== "object")
+	continue;
+
+      for (label in dependencies[i])
+      {
+	if (dependencies[i].hasOwnProperty(label))
+	{
+	  if (!deps)
+	    deps = {};
+	  addLabeledDep(dependencies[i][label]);
+	}
+      }
+    }
+  }
+
   var newRequire = function require(moduleIdentifier) 
   {
+    if (deps && deps[moduleIdentifier])
+      return deps[moduleIdentifier]();
     return bravojs.requireModule(moduleDir, moduleIdentifier);
   }
 
@@ -714,11 +745,6 @@ module.declare = function main_module_declare(dependencies, moduleFactory)
     moduleFactory = dependencies;
     dependencies = [];
   }
-
-  var moduleIdentifier = null;
-  var mainModule = new module.constructor(moduleIdentifier, dependencies);
-
-  delete module.declare;
 
   bravojs.initializeMainModule(dependencies, moduleFactory, null);
 }
