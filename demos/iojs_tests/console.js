@@ -122,7 +122,7 @@ bravojs.errorReporter = function uncaught_exception(e)
     }      
 
     stack = stack.split(bravojs.dirname("@" + window.location.href)).join("@.");
-    stack = stack.split(bravojs.dirname("@" + bravojs.uri)).join("@<BravoJS>");
+    stack = stack.split(bravojs.dirname("@" + bravojs.url)).join("@<BravoJS>");
     stack = stack.split(".js?1:").join(".js:");
     bravojs.print(cols(115, "@", "   > ", "       ", "   at ", stack));
   }
