@@ -1,7 +1,8 @@
 /**
- *  This file implements a CommonJS Modules/2.0 environment.
+ *  This file implements BravoJS, a CommonJS Modules/2.0 environment.
  *
- *  Copyright (c) 2010, Wes Garland, wes@page.ca
+ *  Copyright (c) 2010, PageMail, Inc.
+ *  Wes Garland, wes@page.ca
  *  MIT License
  */
 var bravojs;			/**< Namespace object for this implementation */
@@ -318,7 +319,7 @@ bravojs.requireModule = function bravojs_requireModule(parentModuleDir, moduleId
   var id;
   var idx = false;
 
-  try 
+  try
   {
     id = bravojs.makeModuleId(parentModuleDir, moduleIdentifier);
     idx = bravojs.makeModuleIndex(id);
@@ -614,7 +615,7 @@ bravojs.es5_shim_then = function bravojs_es5_shim_then(callback)
     /* Load ES-5 shim into the environment before executing the main module */
     var script = document.createElement('SCRIPT');
     script.setAttribute("type","text/javascript");
-    script.setAttribute("src", bravojs.dirname(bravojs.url) + "/es5-shim.js?1");
+    script.setAttribute("src", bravojs.dirname(bravojs.url) + "/global-es5.js?1");
 
     if (document.addEventListener)
       script.onload = callback;
