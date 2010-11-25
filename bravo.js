@@ -276,7 +276,7 @@ bravojs.provideModule = function bravojs_provideModule(dependencies, moduleFacto
 {
   /* Memoize the the factory, satistfy the dependencies, and invoke the callback */
   if (moduleFactory)
-    bravojs.pendingModuleDeclarations[bravojs.makeModuleIndex(id)] = { moduleFactory: moduleFactory, dependencies: dependencies };
+    require.memoize(id, dependencies, moduleFactory);
 
   if (dependencies)
   {
@@ -392,6 +392,11 @@ bravojs.requireFactory = function bravojs_requireFactory(moduleDir, dependencies
       throw new Error("Cannot canonically name the resource bearing this main module");
 
     return window.location.protocol + "/" + id + ".js";
+  }
+
+  newRequire.memoize = function require_memoize(id, dependencies, moduleFactory)
+  {
+    bravojs.pendingModuleDeclarations[bravojs.makeModuleIndex(id)] = { moduleFactory: moduleFactory, dependencies: dependencies };
   }
 
   return newRequire;
@@ -519,7 +524,7 @@ bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies,
  *
  *  @param	dependencies	A dependency array
  *  @param	callback	The callback to invoke once all dependencies have been
- *				provided to the environment.
+ *				provided to the environment. Optional.
  */
 bravojs.Module.prototype.provide = function bravojs_Module_provide(dependencies, callback)
 {
@@ -534,8 +539,6 @@ bravojs.Module.prototype.provide = function bravojs_Module_provide(dependencies,
   {
     if (callback)
       callback();
-    else
-      throw new Error("no callback after provide");
     return;
   }
 
