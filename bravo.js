@@ -399,6 +399,13 @@ bravojs.requireFactory = function bravojs_requireFactory(moduleDir, dependencies
     bravojs.pendingModuleDeclarations[bravojs.makeModuleIndex(id)] = { moduleFactory: moduleFactory, dependencies: dependencies };
   }
 
+  newRequire.isMemoized = function require_isMemoized(id)
+  {
+    var idx = bravojs.makeModuleIndex(id);
+
+    return (bravojs.pendingModuleDeclarations[id] || bravojs.requireMemo[id]) ? true : false;
+  }
+
   return newRequire;
 }
 
