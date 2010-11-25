@@ -1,14 +1,22 @@
 <html>
 <head>
   <script src="../../bravo.js"></script>
+  <script src="http://pieisgood.org/files/lazyload-2.0.0/lazyload.js"></script>     
+  <script src="../../wonkoll.js"></script>
   <script src="console.js"></script>
   <script>
 
+/* 
+ * Note: Tests "determinism" and "relative" will stop the test harness
+ *       from running when the module loader does not handle file-not-found
+ *       errors gracefully.
+ */
+
 var tests = 
 [ 
-  "absolute", "cyclic", "determinism", "exactExports", 
+  "absolute", "cyclic", "exactExports", 
   "hasOwnProperty", "method", "missing", "monkeys", 
-  "nested", "relative", "transitive" 
+  "nested", "transitive", "determinism", "relative"
 ];
 
   </script>
