@@ -24,7 +24,7 @@ bravojs.reset = function bravojs_reset()
 {
   bravojs.requireMemo 			= {};	/**< Module exports, indexed by canonical name */
   bravojs.pendingModuleDeclarations	= {};	/**< Module.declare arguments, indexed by canonical name */
-  bravojs.mainModuleDir 		= bravojs.dirname(bravojs.URL_toId(window.location.href + ".js"));
+  bravojs.mainModuleDir 		= bravojs.dirname(bravojs.URL_toId(window.location.href + ".js", true));
 
   delete bravojs.Module.prototype.main;
   delete bravojs.scriptTagMemo;
@@ -190,7 +190,7 @@ bravojs.makeModuleIndex = function makeModuleIndex(moduleId)
 }
 
 /** Turn a script URL into a canonical module.id */
-bravojs.URL_toId = function URL_toId(moduleURL)
+bravojs.URL_toId = function URL_toId(moduleURL, relaxValidation)
 {
   var i;
 
@@ -208,7 +208,7 @@ bravojs.URL_toId = function URL_toId(moduleURL)
   if ((i = id.indexOf('#')) != -1)
     id = id.slice(0, i);
 
-  if (id.slice(-3) != ".js")
+  if (!relaxValidation && (id.slice(-3) != ".js"))
     throw new Error("Invalid module URL: " + moduleURL);
   id = id.slice(0,-3);
 
@@ -686,7 +686,7 @@ bravojs.runExternalMainModule = function bravojs_runExternalProgram(dependencies
   if (moduleIdentifier.charAt(0) === '/')
     bravojs.mainModuleDir = bravojs.dirname(moduleIdentifier);
   else
-    bravojs.mainModuleDir = bravojs.dirname(bravojs.URL_toId(window.location.href + ".js")) + "/" + bravojs.dirname(moduleIdentifier);
+    bravojs.mainModuleDir = bravojs.dirname(bravojs.URL_toId(window.location.href + ".js"), true) + "/" + bravojs.dirname(moduleIdentifier);
 
   moduleIdentifier = bravojs.basename(moduleIdentifier);
 
