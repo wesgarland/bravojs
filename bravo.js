@@ -562,6 +562,9 @@ bravojs.Module.prototype.provide = function bravojs_Module_provide(dependencies,
  */
 bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, callback)
 {
+  if (window.module.hasOwnProperty("declare"))
+    delete window.module.declare;
+
   var script = document.createElement('SCRIPT');
   script.setAttribute("type","text/javascript");
   script.setAttribute("src", require.canonicalize(moduleIdentifier) + "?1");
