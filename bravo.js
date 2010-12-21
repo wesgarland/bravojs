@@ -7,24 +7,34 @@
  */
 var bravojs;			/**< Namespace object for this implementation */
 
-if (!bravojs)
-  bravojs = 
-  {
-    errorReporter: function bravojs_errorReporter(e)
-    {
-      alert(" * BravoJS: " + e + "\n" + e.stack);
-      throw(e);
-    }
-  };
+if (typeof bravojs === "undefined")
+  bravojs = {};
 
 try { 
 
-/** Reset the environment so that a new main module can be loaded */
-bravojs.reset = function bravojs_reset()
+if (!bravojs.hasOwnProperty("errorReporter"))
 {
+  bravojs.errorReporter = function bravojs_defaultDrrorReporter(e)
+  {
+    alert(" * BravoJS: " + e + "\n" + e.stack);
+    throw(e);
+  }
+}
+
+/** Reset the environment so that a new main module can be loaded */
+bravojs.reset = function bravojs_reset(mainModuleDir)
+{
+  if (!mainModuleDir)
+  {
+    if (bravojs.mainModuleDir)
+      mainModuleDir = bravojs.mainModuleDir;
+    else
+      mainModuleDir = bravojs.dirname(bravojs.URL_toId(window.location.href + ".js", true));
+  }
+
   bravojs.requireMemo 			= {};	/**< Module exports, indexed by canonical name */
   bravojs.pendingModuleDeclarations	= {};	/**< Module.declare arguments, indexed by canonical name */
-  bravojs.mainModuleDir 		= bravojs.dirname(bravojs.URL_toId(window.location.href + ".js", true));
+  bravojs.mainModuleDir 		= mainModuleDir;
 
   delete bravojs.Module.prototype.main;
   delete bravojs.scriptTagMemo;
