@@ -659,6 +659,20 @@ bravojs.es5_shim_then = function bravojs_es5_shim_then(callback)
   }
 }
 
+/** Reload a module, violating the CommonJS singleton paradigm and
+ *  potentially introducing bugs in to the program using this function --
+ *  as references to the previous instance of the module may still be
+ *  held by the application program.
+ */
+bravojs.reloadModule = function(id, callback)
+{
+  var idx = bravojs.makeModuleIndex(id);
+
+  delete bravojs.pendingModuleDeclarations[idx];
+  delete bravojs.requireMemo[idx];
+  module.provide([id], callback);
+}
+
 /** Main module bootstrap */
 bravojs.initializeMainModule = function bravojs_initializeMainModule(dependencies, moduleFactory, moduleIdentifier)
 {
