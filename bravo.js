@@ -594,6 +594,8 @@ bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, c
   document.getElementsByTagName("HEAD")[0].appendChild(script);
 }
 
+bravojs.Module.prototype.eventually = function(cb) { cb(); };
+
 /** Shim the environment to have CommonJS ES-5 requirements (if needed),
  *  the execute the callback
  */
@@ -646,12 +648,11 @@ bravojs.initializeMainModule = function bravojs_initializeMainModule(dependencie
   if (module.constructor.prototype.main)
     throw new Error("Main module has already been initialized!");
 
-  module.constructor.prototype.main = module;
   bravojs.es5_shim_then
   (
     (function() 
      {
-       bravojs.provideModule(dependencies, moduleFactory, moduleIdentifier, function bravojs_lambda_requireMain() { require(moduleIdentifier) })
+       bravojs.provideModule(dependencies, moduleFactory, moduleIdentifier, function bravojs_lambda_requireMain() { module.constructor.prototype.main = require(moduleIdentifier); })
      })
   ); 
 }

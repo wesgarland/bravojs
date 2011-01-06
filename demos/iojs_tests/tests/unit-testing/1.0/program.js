@@ -157,6 +157,6 @@ exports['test throw AssertionError'] = function () {
 
 };
 
-if (module == require.main)
+if (exports === module.main)
     require("test").run(exports);
 
