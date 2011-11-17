@@ -549,7 +549,7 @@ bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, c
 
   var script = document.createElement('SCRIPT');
   script.setAttribute("type","text/javascript");
-  script.setAttribute("src", require.canonicalize(moduleIdentifier) + "?1");
+  script.setAttribute("src", require.canonicalize(moduleIdentifier) + "?" + (bravojs.debug ? Date.now() : "1"));
 
   if (document.addEventListener)	/* Non-IE; see bravojs_Module_declare */
   {
