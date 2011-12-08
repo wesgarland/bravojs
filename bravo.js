@@ -114,7 +114,10 @@ bravojs.realpath = function bravojs_realpath(path)
     if (oldPath[i] == '..')
     {
       if (!newPath.length)
-	throw new Error("Invalid module path: " + path);
+      {
+	bravojs.e = new Error("Invalid module path: " + path);
+	throw bravojs.e;
+      }
       newPath.pop();
       continue;
     }
@@ -164,7 +167,10 @@ bravojs.makeModuleId = function makeModuleId(relativeModuleDir, moduleIdentifier
     return '';
 
   if (typeof moduleIdentifier !== "string")
-    throw new Error("Invalid module identifier: " + moduleIdentifier.toSource());
+  {
+    bravojs.e = new Error("Invalid module identifier: " + moduleIdentifier.toSource());
+    throw bravojs.e;
+  }
 
   if (moduleIdentifier.charAt(0) === '/')
   {
@@ -198,7 +204,10 @@ bravojs.URL_toId = function URL_toId(moduleURL, relaxValidation)
    */
   i = moduleURL.indexOf("://");
   if (i == -1)
-    throw new Error("Invalid module URL: " + moduleURL);
+  {
+    bravoje.e = new Error("Invalid module URL: " + moduleURL);
+    throw bravojs.e;
+  }
   id = moduleURL.slice(i + 2);
 
   id = bravojs.realpath(id);
@@ -208,7 +217,10 @@ bravojs.URL_toId = function URL_toId(moduleURL, relaxValidation)
     id = id.slice(0, i);
 
   if (!relaxValidation && (id.slice(-3) != ".js"))
-    throw new Error("Invalid module URL: " + moduleURL);
+  {
+    bravoje.e = new Error("Invalid module URL: " + moduleURL);
+    throw bravojs.e;
+  }
   id = id.slice(0,-3);
 
   return id;
@@ -216,17 +228,27 @@ bravojs.URL_toId = function URL_toId(moduleURL, relaxValidation)
 
 /** Normalize a dependency array so that only unique and previously unprovided 
  *  dependencies appear in the output list. The output list also canonicalizes
- *  the module names relative to the current require. Labeled dependencies are
- *  unboxed.
+ *  the module names relative to the current require, or the rel parameter.
+ *  Labeled dependencies are unboxed.
+ *
+ *  @param	dependencies		A dependency array
+ *  @param	rel			The canonical module id we are resolving
+ *					dependencies against; if undefined, we
+ *					use the current require.id method.
  */
-bravojs.normalizeDependencyArray = function bravojs_normalizeDependencyArray(dependencies)
+bravojs.normalizeDependencyArray = function bravojs_normalizeDependencyArray(dependencies, rel)
 {
   var normalizedDependencies = [];
   var i, label;
 
   function addNormal(moduleIdentifier)
   {
-    var id = require.id(moduleIdentifier);
+    var id;
+
+    if (rel)
+      id = bravojs.makeModuleId(bravojs.dirname(rel), moduleIdentifier);
+    else
+      id = require.id(moduleIdentifier);
 
     if (bravojs.requireMemo[id] || bravojs.pendingModuleDeclarations[id])
       return;
@@ -251,7 +273,8 @@ bravojs.normalizeDependencyArray = function bravojs_normalizeDependencyArray(dep
 	break;
 
       default:
-	throw new Error("Invalid dependency array value at position " + (i+1));
+	bravojs.e = new Error("Invalid dependency array value at position " + (i+1));
+	throw bravojs.e;
     }
   }
 
@@ -277,7 +300,7 @@ bravojs.provideModule = function bravojs_provideModule(dependencies, moduleFacto
 
   if (dependencies)
   {
-    module.provide(bravojs.normalizeDependencyArray(dependencies), callback);
+    module.provide(bravojs.normalizeDependencyArray(dependencies, id), callback);
   }
   else
   {
@@ -312,12 +335,28 @@ bravojs.initializeModule = function bravojs_initializeModule(id)
 bravojs.requireModule = function bravojs_requireModule(parentModuleDir, moduleIdentifier)
 {
   var id = bravojs.makeModuleId(parentModuleDir, moduleIdentifier);
+  var e, i, a;
 
   if (!bravojs.requireMemo[id] && bravojs.pendingModuleDeclarations[id])
     bravojs.initializeModule(id);
 
   if (id === null || !bravojs.requireMemo[id])
-    throw new Error("Module " + id + " is not available.");
+  {
+    bravojs.e = new Error("Module '" + id + "' is not available.");
+    if (typeof bravojs.e.stack === "string")
+    {
+      a = bravojs.e.stack.split("\n");
+      for (i=0; i < a.length; i++)
+      {
+	if (a[i].match(/^require\(/))
+	{
+	  bravojs.e = new Error("Module '" + id + "' is not available.\n > Probable call site: " + a[i+1]);
+	  break;
+	}
+      }
+    }
+    throw bravojs.e;
+  }
 
   return bravojs.requireMemo[id];
 }
@@ -373,7 +412,10 @@ bravojs.requireFactory = function bravojs_requireFactory(moduleDir, dependencies
     var id = bravojs.makeModuleId(moduleDir, moduleIdentifier);
 
     if (id === '')
-      throw new Error("Cannot canonically name the resource bearing this main module");
+    {
+      bravojs.e = new Error("Cannot canonically name the resource bearing this main module");
+      throw bravojs.e;
+    }
 
     return window.location.protocol + "/" + id + ".js";
   }
@@ -413,7 +455,10 @@ bravojs.Module = function bravojs_Module(id, dependencies)
       continue;
 
     if (typeof dependencies[i] !== "object")
-      throw new Error("Invalid " + typeof dependencies[i] + " element in dependency array at position " + i);
+    {
+      bravojs.e = new Error("Invalid " + typeof dependencies[i] + " element in dependency array at position " + i);
+      throw bravojs.e;
+    }
 
     /* Labeled dependency object */
     for (label in dependencies[i])
@@ -466,6 +511,8 @@ bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies,
   stm = bravojs.scriptTagMemo;
   if (stm && stm.id === '')		/* Static HTML module */
   {
+    if (bravojs.dependencyDebug)
+      bravojs.print("static HTML module depends on:\n" + dependencies.join(",\n"));
     delete bravojs.scriptTagMemo;
     bravojs.provideModule(dependencies, moduleFactory, stm.id, stm.callback);    
     return;
@@ -485,6 +532,8 @@ bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies,
 
   if (stm && stm.id) 			/* IE, pulling from cache */
   {
+    if (bravojs.dependencyDebug)
+      bravojs.print("cached module " + stm.id + " depends on:\n" + depdencies.join(",\n"));
     bravojs.provideModule(dependencies, moduleFactory, stm.id, stm.callback);
     return;
   }
@@ -497,12 +546,15 @@ bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies,
   {
     if (scripts[i].readyState === "interactive")
     {
+      if (bravojs.dependencyDebug)
+        bravojs.print("remote module " + stm.id + " depends on:\n" + depdencies.join(",\n"));
       bravojs.provideModule(dependencies, moduleFactory, bravojs.URL_toId(scripts[i].src), stm.callback);
       return;
     }
   }
 
-  throw new Error("Could not determine module's canonical name from script-tag loader");
+  bravojs.e = new Error("Could not determine module's canonical name from script-tag loader");
+  throw bravojs.e;
 }
 
 /** A module.provide suitable for a generic web-server back end.  Loads one module at
@@ -520,7 +572,10 @@ bravojs.Module.prototype.provide = function bravojs_Module_provide(dependencies,
   var self = arguments.callee;
 
   if ((typeof dependencies !== "object") || (dependencies.length !== 0 && !dependencies.length))
-    throw new Error("Invalid dependency array: " + dependencies.toString());
+  {
+    bravojs.e = new Error("Invalid dependency array: " + dependencies.toString());
+    throw bravojs.e;
+  }
 
   dependencies = bravojs.normalizeDependencyArray(dependencies);
 
@@ -558,7 +613,10 @@ bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, c
       /* stm contains info from recently-run module.declare() */
       var stm = bravojs.scriptTagMemo;
       if (typeof stm === "undefined")
-	throw new Error("Module '" + moduleIdentifier + "' did not invoke module.declare!");
+      {
+	bravojs.e = new Error("Module '" + moduleIdentifier + "' did not invoke module.declare!");
+	throw bravojs.e;
+      }
 
       delete bravojs.scriptTagMemo;
       bravojs.provideModule(stm.dependencies, stm.moduleFactory, require.id(moduleIdentifier), callback);
@@ -646,7 +704,10 @@ bravojs.initializeMainModule = function bravojs_initializeMainModule(dependencie
     delete module.declare;
 
   if (module.constructor.prototype.main)
-    throw new Error("Main module has already been initialized!");
+  {
+    bravojs.e = new Error("Main module has already been initialized!");
+    throw bravojs.e;
+  }
 
   bravojs.es5_shim_then
   (
@@ -718,7 +779,10 @@ bravojs.reset();
     bravojs.url = bravojs.url.slice(0,i);
 
   if (bravojs.basename(bravojs.url) !== "bravo.js")
-    throw new Error("Could not determine BravoJS URL. BravoJS must be the first script, or have id='BravoJS'");
+  {
+    bravojs.e = new Error("Could not determine BravoJS URL. BravoJS must be the first script, or have id='BravoJS'");
+    throw bravojs.e;
+  }
 })();
 
 /** Diagnostic Aids */
