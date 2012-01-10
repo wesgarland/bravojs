@@ -2,6 +2,7 @@
 // -- kriskowal Kris Kowal Copyright (C) 2009-2010 MIT License
 // -- tlrobinson Tom Robinson
 // dantman Daniel Friesen
+// wes@page.ca; BravoJS repo, bugfixes
 
 /*!
     Copyright (c) 2009, 280 North Inc. http://280north.com/
@@ -317,8 +318,7 @@ if (!Object.freeze) {
     Object.freeze = function (object) {
         return object;
     };
-} else if (require("./engine").engine.indexOf("rhino") >= 0) {
-    // TODO feature-detect
+} else if (typeof Packages === "object" && String(Packages) === "[JavaPackage ]") {
     // XXX workaround for a Rhino bug.
     var freeze = Object.freeze;
     Object.freeze = function (object) {

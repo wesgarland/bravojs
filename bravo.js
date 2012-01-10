@@ -659,7 +659,7 @@ bravojs.Module.prototype.eventually = function(cb) { cb(); };
  */
 bravojs.es5_shim_then = function bravojs_es5_shim_then(callback)
 {
-  if (!Array.prototype.indexOf)
+  if (!Array.prototype.indexOf || !Function.prototype.bind)
   {
     /* Load ES-5 shim into the environment before executing the main module */
     var script = document.createElement('SCRIPT');
