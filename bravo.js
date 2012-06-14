@@ -604,7 +604,7 @@ bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, c
 
   var script = document.createElement('SCRIPT');
   script.setAttribute("type","text/javascript");
-  script.setAttribute("src", require.canonicalize(moduleIdentifier) + "?" + (bravojs.debug ? Date.now() : "1"));
+  script.setAttribute("src", require.canonicalize(moduleIdentifier) + "?" + (bravojs.debug === true ? Date.now() : (bravojs.debug ? bravojs.debug : "1")));
 
   if (document.addEventListener)	/* Non-IE; see bravojs_Module_declare */
   {
@@ -664,7 +664,7 @@ bravojs.es5_shim_then = function bravojs_es5_shim_then(callback)
     /* Load ES-5 shim into the environment before executing the main module */
     var script = document.createElement('SCRIPT');
     script.setAttribute("type","text/javascript");
-    script.setAttribute("src", bravojs.dirname(bravojs.url) + "/global-es5.js?1");
+    script.setAttribute("src", bravojs.dirname(bravojs.url) + "/global-es5.js" + "?" + (bravojs.debug === true ? Date.now() : (bravojs.debug ? bravojs.debug : "1")));
 
     if (document.addEventListener)
       script.onload = callback;
