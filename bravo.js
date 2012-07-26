@@ -205,7 +205,7 @@ bravojs.URL_toId = function URL_toId(moduleURL, relaxValidation)
   i = moduleURL.indexOf("://");
   if (i == -1)
   {
-    bravoje.e = new Error("Invalid module URL: " + moduleURL);
+    bravojs.e = new Error("Invalid module URL: " + moduleURL);
     throw bravojs.e;
   }
   id = moduleURL.slice(i + 2);
@@ -218,7 +218,7 @@ bravojs.URL_toId = function URL_toId(moduleURL, relaxValidation)
 
   if (!relaxValidation && (id.slice(-3) != ".js"))
   {
-    bravoje.e = new Error("Invalid module URL: " + moduleURL);
+    bravojs.e = new Error("Invalid module URL: " + moduleURL);
     throw bravojs.e;
   }
   id = id.slice(0,-3);
