@@ -14,7 +14,7 @@ try {
 
 if (!bravojs.hasOwnProperty("errorReporter"))
 {
-  bravojs.errorReporter = function bravojs_defaultDrrorReporter(e)
+  bravojs.errorReporter = function bravojs_defaultErrorReporter(e)
   {
     alert(" * BravoJS: " + e + "\n" + e.stack);
     throw(e);
@@ -22,25 +22,19 @@ if (!bravojs.hasOwnProperty("errorReporter"))
 }
 
 /** Reset the environment so that a new main module can be loaded */
-bravojs.reset = function bravojs_reset(mainModuleDir)
+bravojs.reset = function bravojs_reset(mainModuleDir, paths)
 {
-  if (!mainModuleDir)
-  {
-    if (bravojs.mainModuleDir)
-      mainModuleDir = bravojs.mainModuleDir;
-    else
-      mainModuleDir = bravojs.dirname(bravojs.URL_toId(window.location.href + ".js", true));
-  }
-
   bravojs.requireMemo 			= {};	/**< Module exports, indexed by canonical name */
   bravojs.pendingModuleDeclarations	= {};	/**< Module.declare arguments, indexed by canonical name */
-  bravojs.mainModuleDir 		= mainModuleDir;
+  bravojs.paths                         = paths || [];  /**< Backing array for require.paths */
+  bravojs.mainModuleDir                 = mainModuleDir 
+                                          || bravojs.dirname(bravojs.URL_toId(window.location.href + ".js", true)); /**< Current directory for relative paths from main module */
 
   delete bravojs.Module.prototype.main;
   delete bravojs.scriptTagMemo;
   delete bravojs.scriptTagMemoIE;
 
-  /** Extra-module environment */
+  /* Extra-module environment */
   window.require = bravojs.requireFactory(bravojs.mainModuleDir);
   window.module  = new bravojs.Module('', []);
 }
@@ -185,10 +179,19 @@ bravojs.makeModuleId = function makeModuleId(relativeModuleDir, moduleIdentifier
   }
   else
   {
-    /* Top-level module. Since we don't implement require.paths,
-     *  make it relative to the main module.
+    /* Top-level module. If there are no require.paths, make it relative
+     * to the main module; otherwise use the first path entry. We do not
+     * support multiple paths because of the cost of path-searching over
+     * unassisted HTTP.
      */
-    id = bravojs.mainModuleDir + "/" + moduleIdentifier;
+    if (bravojs.paths.length === 0)
+      id = bravojs.mainModuleDir + "/" + moduleIdentifier;
+    else
+    {
+      if (bravojs.paths.length !== 1)
+	throw new Error("Maximum path length (1) exceeded for require.paths!");
+      id = bravojs.paths[0] + "/" + moduleIdentifier;
+    }
   }
 
   return bravojs.realpath(id);
@@ -430,6 +433,7 @@ bravojs.requireFactory = function bravojs_requireFactory(moduleDir, dependencies
     return (bravojs.pendingModuleDeclarations[id] || bravojs.requireMemo[id]) ? true : false;
   }
 
+  newRequire.paths = bravojs.paths;
   return newRequire;
 }
 
@@ -488,6 +492,11 @@ bravojs.Module = function bravojs_Module(id, dependencies)
  *  in the DOM, or sometime thereafter. In the first case, we read a 
  *  memo we left behind when we started inserting the tag; in the latter,
  *  we look for interactive scripts.
+ *
+ *  Note: "IE browsers" describes Internet Explorer versions 6 through 8.
+ *        Research has not been done on later versions. Provided the
+ *        behaviour either remains the same, or the new behaviour matches
+ *        all other browsers, this code will continue to function correctly.
  *
  *  Event			Action		
  *  -------------------------   ------------------------------------------------------------------------------------
@@ -754,7 +763,7 @@ bravojs.runExternalMainModule = function bravojs_runExternalProgram(dependencies
 	    });
 }
 
-bravojs.reset();
+bravojs.reset(bravojs.mainModuleDir, bravojs.paths);  /* Use the reset code to initialize state */
 
 /** Set the BravoJS URL, so that BravoJS can load components
  *  relative to its install dir.  The HTML script element that
