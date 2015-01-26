@@ -798,13 +798,26 @@ bravojs.reset(bravojs.mainModuleDir, bravojs.paths);  /* Use the reset code to i
 var print   = bravojs.print;
 if (!window.onerror)
 {
-  window.onerror = function window_onerror(message, url, line) 
+  window.onerror = function window_onerror(message, url, line, column, e)
   { 
-    var scripts, i;
+    var s;
 
-    print("\n * Error: " + message + "\n" + 
-          "      in: " + url + "\n" + 
-          "    line: " + line);  
+    if (typeof e === "object" && e instanceof Error && print === bravojs.print)
+    {
+      s = "            ".slice(0,e.name.length);
+      console.log("%c" + e.name + ": " + e.message,     "font-weight: bold; color: black;");
+      console.log("%c" + s.slice(2) +    "in: " + url,  "color: black;");
+      console.log("%c" + s.slice(4) +  "line: " + line, "color: black;");
+      if (column)
+        console.log("%c" + s.slice(3) +   "col: " + column,"color: black;");
+      console.log("%c" + s.slice(5) + "stack: " + e.stack.split("\n").join("\n  " + s), "color: grey;");
+    }
+    else
+    {
+      print("\n * Error: " + message + "\n" + 
+            "      in: " + url + "\n" + 
+            "    line: " + line + "\n");
+    }
   }
 }
 
