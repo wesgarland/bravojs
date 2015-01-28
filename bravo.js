@@ -658,7 +658,7 @@ bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, c
     }
   }
 
-  document.getElementsByTagName("HEAD")[0].appendChild(script);
+  (document.getElementsByTagName("HEAD")[0] || document.body).appendChild(script);
 }
 
 bravojs.Module.prototype.eventually = function(cb) { cb(); };
@@ -686,7 +686,7 @@ bravojs.es5_shim_then = function bravojs_es5_shim_then(callback)
       }
     }
 
-    document.getElementsByTagName("HEAD")[0].appendChild(script);
+    (document.getElementsByTagName("HEAD")[0] || document.body).appendChild(script);
   }
   else
   {
