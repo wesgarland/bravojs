@@ -153,7 +153,7 @@ bravojs.dirname = function bravojs_dirname(path)
 /** Turn a module identifier and module directory into a canonical
  *  module.id.
  */
-bravojs.makeModuleId = function makeModuleId(relativeModuleDir, moduleIdentifier)
+bravojs.makeModuleId = function bravojs_makeModuleId(relativeModuleDir, moduleIdentifier)
 {
   var id;
 
@@ -198,7 +198,7 @@ bravojs.makeModuleId = function makeModuleId(relativeModuleDir, moduleIdentifier
 }
 
 /** Turn a script URL into a canonical module.id */
-bravojs.URL_toId = function URL_toId(moduleURL, relaxValidation)
+bravojs.URL_toId = function bravojs_URL_toId(moduleURL, relaxValidation)
 {
   var i;
 
@@ -722,7 +722,24 @@ bravojs.initializeMainModule = function bravojs_initializeMainModule(dependencie
   (
     (function() 
      {
-       bravojs.provideModule(dependencies, moduleFactory, moduleIdentifier, function bravojs_lambda_requireMain() { module.constructor.prototype.main = require(moduleIdentifier); })
+       bravojs.provideModule(dependencies, moduleFactory, moduleIdentifier, 
+			     function bravojs_lambda_requireMain() 
+			     { 
+                               var main;
+
+			       Object.defineProperty(module.constructor.prototype, "main", 
+						     { 
+                                                       enumerable:      true,
+                                                       configurable:    true,
+                                                       get:             function() 
+                                                       { 
+                                                         return require(moduleIdentifier);
+                                                       } 
+                                                     });
+                               main = require(moduleIdentifier);
+                               delete module.constructor.prototype.main;
+                               module.constructor.prototype.main = main;
+			     });
      })
   ); 
 }
@@ -798,7 +815,7 @@ bravojs.reset(bravojs.mainModuleDir, bravojs.paths);  /* Use the reset code to i
 var print   = bravojs.print;
 if (!window.onerror)
 {
-  window.onerror = function window_onerror(message, url, line, column, e)
+  window.onerror = function bravojs_window_onerror(message, url, line, column, e)
   { 
     var s;
 
@@ -810,7 +827,7 @@ if (!window.onerror)
       console.log("%c" + s.slice(4) +  "line: " + line, "color: black;");
       if (column)
         console.log("%c" + s.slice(3) +   "col: " + column,"color: black;");
-      console.log("%c" + s.slice(5) + "stack: " + e.stack.split("\n").join("\n  " + s), "color: grey;");
+      console.log("%c" + s.slice(5) + "stack: " + e.stack.replace(/\nbravojs_.*/g,"\n").replace(/\n *\n/g,"").split("\n").join("\n  " + s), "color: grey;");
     }
     else
     {
@@ -826,7 +843,7 @@ if (!window.onerror)
  * from the prototype take over. Modules created from this function have
  * the empty string as module.id.
  */
-module.declare = function main_module_declare(dependencies, moduleFactory)
+module.declare = function bravojs_main_module_declare(dependencies, moduleFactory)
 {
   if (typeof dependencies === "function")
   {
