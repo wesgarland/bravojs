@@ -29,7 +29,6 @@ bravojs.reset = function bravojs_reset(mainModuleDir, paths)
   bravojs.paths                         = paths || [];  /**< Backing array for require.paths */
   bravojs.mainModuleDir                 = mainModuleDir 
                                           || bravojs.dirname(bravojs.URL_toId(window.location.href + ".js", true)); /**< Current directory for relative paths from main module */
-
   delete bravojs.Module.prototype.main;
   delete bravojs.scriptTagMemo;
   delete bravojs.scriptTagMemoIE;
@@ -83,6 +82,17 @@ bravojs.print = function bravojs_print()
   }
   else 
     alert(" * BravoJS stdout: " + output);
+}
+
+bravojs.warn = function bravojs_warn()
+{
+  if (typeof console === "object" && console.warn)
+    console.warn.apply(console, arguments);
+  else
+  {
+    arguments[0] = "BravoJS Warning: " + arguments[0];
+    bravojs.print.apply(this, arguments);
+  }
 }
 
 /** Canonicalize path, compacting slashes and dots per basic UNIX rules.
@@ -200,13 +210,14 @@ bravojs.makeModuleId = function bravojs_makeModuleId(relativeModuleDir, moduleId
 /** Turn a script URL into a canonical module.id */
 bravojs.URL_toId = function bravojs_URL_toId(moduleURL, relaxValidation)
 {
-  var i;
+  var i, s;
 
-  /* Treat the whole web as our module repository.
-   * 'http://www.page.ca/a/b/module.js' has id '/www.page.ca/a/b/module'. 
+  /* Treat the whole web as our module repository, ignoring protocol.
+   * 'http://www.page.ca/a/b/module.js' and 'https://www.page.ca/a/b/module.js' 
+   * both have id '//www.page.ca/a/b/module'. 
    */
-  i = moduleURL.indexOf("://");
-  if (i == -1)
+  moduleURL = moduleURL.replace(/^https?:\/\//i, "//");
+  if (!moduleURL.match(/^\/\//))
   {
     bravojs.e = new Error("Invalid module URL: " + moduleURL);
     throw bravojs.e;
@@ -219,12 +230,14 @@ bravojs.URL_toId = function bravojs_URL_toId(moduleURL, relaxValidation)
   if ((i = id.indexOf('#')) != -1)
     id = id.slice(0, i);
 
-  if (!relaxValidation && (id.slice(-3) != ".js"))
+  s = id.slice(-3);
+  if (!relaxValidation && (s !== ".js"))
   {
     bravojs.e = new Error("Invalid module URL: " + moduleURL);
     throw bravojs.e;
   }
-  id = id.slice(0,-3);
+  if (s === ".js")
+    id = id.slice(0,-3);
 
   return id;
 }
@@ -482,7 +495,7 @@ bravojs.Module = function bravojs_Module(id, dependencies)
  * 
  *  The general technique described below was invented by Kris Zyp.
  *
- *  In non-IE browsers, the script's onload event fires as soon as the 
+ *  In non-old-IE browsers, the script's onload event fires as soon as the 
  *  script finishes running, so we just memoize the declaration without
  *  doing anything. After the script is loaded, we do the "real" work
  *  as the onload event also supplies the script's URI, which we use
@@ -504,7 +517,7 @@ bravojs.Module = function bravojs_Module(id, dependencies)
  *				scriptTagMemo populated with URI
  *  IE pulls from cache		cname derived in module.declare from scriptTagMemo, invoke provideModule
  *  IE pulls from http		cname derived in module.declare from script.src, invoke provideModule
- *  Non-IE loads script		onload event triggered, most recent incomplete module.declare is completed, 
+ *  Non-old-IE loads script	onload event triggered, most recent incomplete module.declare is completed, 
  *				deriving the cname from the onload event.
  */
 bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies, moduleFactory)
@@ -530,7 +543,7 @@ bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies,
   if (stm)
     throw new Error("Bug");
 
-  if (document.addEventListener)	/* non-IE, defer work to script's onload event which will happen immediately */
+  if (document.addEventListener)	/* non-old-IE, defer work to script's onload event which will happen immediately */
   {
     bravojs.scriptTagMemo = { dependencies: dependencies, moduleFactory: moduleFactory };
     return;
@@ -539,7 +552,7 @@ bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies,
   stm = bravojs.scriptTagMemoIE;
   delete bravojs.scriptTagMemoIE;
 
-  if (stm && stm.id) 			/* IE, pulling from cache */
+  if (stm && stm.id) 			/* old-IE, pulling from cache */
   {
     if (bravojs.dependencyDebug)
       bravojs.print("cached module " + stm.id + " depends on:\n" + depdencies.join(",\n"));
@@ -575,8 +588,10 @@ bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies,
  *  @param	dependencies	A dependency array
  *  @param	callback	The callback to invoke once all dependencies have been
  *				provided to the environment. Optional.
+ *  @param      onerror         The callback to invoke in the case there was an error providing 
+ *                              the module (e.g. 404). May be called more than once.
  */
-bravojs.Module.prototype.provide = function bravojs_Module_provide(dependencies, callback)
+bravojs.Module.prototype.provide = function bravojs_Module_provide(dependencies, callback, onerror)
 {
   var self = arguments.callee;
 
@@ -595,7 +610,7 @@ bravojs.Module.prototype.provide = function bravojs_Module_provide(dependencies,
     return;
   }
 
-  module.load(dependencies[0], function bravojs_lambda_provideNextDep() { self(dependencies.slice(1), callback) });
+  module.load(dependencies[0], function bravojs_lambda_provideNextDep() { self(dependencies.slice(1), callback, onerror) }, onerror);
 }
 
 /** A module.load suitable for a generic web-server back end. The module is
@@ -603,10 +618,11 @@ bravojs.Module.prototype.provide = function bravojs_Module_provide(dependencies,
  *
  *  @param	moduleIdentifier	Module to load
  *  @param	callback		Callback to invoke when the module has loaded.
- *
+ *  @param      onerror                 The callback to invoke in the case there was an error loading
+ *                                      the module (e.g. 404).
  *  @see	bravojs_Module_declare
  */
-bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, callback)
+bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, callback, onerror)
 {
   if (window.module.hasOwnProperty("declare"))
     delete window.module.declare;
@@ -615,7 +631,7 @@ bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, c
   script.setAttribute("type","text/javascript");
   script.setAttribute("src", require.canonicalize(moduleIdentifier) + "?" + (bravojs.debug === true ? Date.now() : (bravojs.debug ? bravojs.debug : "1")));
 
-  if (document.addEventListener)	/* Non-IE; see bravojs_Module_declare */
+  if (document.addEventListener)	/* Non-old-IE; see bravojs_Module_declare */
   {
     script.onload = function bravojs_lambda_script_onload()
     {
@@ -631,11 +647,13 @@ bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, c
       bravojs.provideModule(stm.dependencies, stm.moduleFactory, require.id(moduleIdentifier), callback);
     }
 
-    script.onerror = function bravojs_lambda_script_onerror() 
+    script.onerror = function bravojs_lambda_script_onerror(message, url, lineNumber) 
     { 
       var id = require.id(moduleIdentifier);
       bravojs.pendingModuleDeclarations[id] = null;	/* Mark null so we don't try to run, but also don't try to reload */
-      callback();
+      if (typeof onerror !== "undefined")
+        onerror();
+      bravojs.warn("Module '" + id + "'" + " not found");
     }
   }
   else
@@ -653,7 +671,9 @@ bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, c
       if (!bravojs.pendingModuleDeclarations[id] && !bravojs.requireMemo[id] && id === bravojs.scriptTagMemoIE.moduleIdentifier)
       {
 	bravojs.pendingModuleDeclarations[id] = null;	/* Mark null so we don't try to run, but also don't try to reload */
-	callback();
+        if (typeof onerror !== "undefined")
+          onerror();
+        bravojs.warn("Module '" + id + "'" + " not found");
       }
     }
   }
@@ -775,7 +795,7 @@ bravojs.runExternalMainModule = function bravojs_runExternalProgram(dependencies
 		       function bravojs_runMainModule() {
 			 bravojs.initializeMainModule(dependencies, '', moduleIdentifier);
 			 if (callback)
-			   callback(); 
+			   callback();
 		       })
 	    });
 }
