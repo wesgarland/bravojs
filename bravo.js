@@ -839,7 +839,7 @@ if (!window.onerror)
   { 
     var s;
 
-    if (typeof e === "object" && e instanceof Error && print === bravojs.print)
+    if (typeof e === "object" && e.stack && print === bravojs.print)
     {
       s = "            ".slice(0,e.name.length);
       console.log("%c" + e.name + ": " + e.message,     "font-weight: bold; color: black;");
