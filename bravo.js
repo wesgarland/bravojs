@@ -839,7 +839,23 @@ if (!window.onerror)
   { 
     var s;
 
-    if (typeof e === "object" && e.stack && print === bravojs.print)
+    if (bravojs.errorReporter && bravojs.errorReporter.name !== "bravojs_defaultErrorReporter")
+    {
+      if (typeof e !== "object")
+      {
+        e = 
+        {
+          name:         "WindowError",
+          message:      message,
+          lineNumber:   line,
+          columnNumber: column,
+          fileName:     url
+        };
+      }
+
+      bravojs.errorReporter(e);
+    }
+    else if (typeof e === "object" && e.stack && print === bravojs.print)
     {
       s = "            ".slice(0,e.name.length);
       console.log("%c" + e.name + ": " + e.message,     "font-weight: bold; color: black;");
