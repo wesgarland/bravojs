@@ -16,8 +16,8 @@ if (!bravojs.hasOwnProperty("errorReporter"))
 {
   bravojs.errorReporter = function bravojs_defaultErrorReporter(e)
   {
-    alert(" * BravoJS: " + e + "\n" + e.stack);
-    throw(e);
+    alert(" * BravoJS: " + e.name + " - " + e.message + " at " + e.fileName + "@" + e.lineNumber + "\n\n" + e.stack);
+    throw e;
   }
 }
 
@@ -639,8 +639,8 @@ bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, c
       var stm = bravojs.scriptTagMemo;
       if (typeof stm === "undefined")
       {
-	bravojs.e = new Error("Module '" + moduleIdentifier + "' did not invoke module.declare!");
-	throw bravojs.e;
+        bravojs.e = new Error("Module '" + moduleIdentifier + "' did not invoke module.declare!");
+        throw bravojs.e;
       }
 
       delete bravojs.scriptTagMemo;
@@ -653,7 +653,8 @@ bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, c
       bravojs.pendingModuleDeclarations[id] = null;	/* Mark null so we don't try to run, but also don't try to reload */
       if (typeof onerror !== "undefined")
         onerror();
-      bravojs.warn("Module '" + id + "'" + " not found");
+      bravojs.e = new Error("Module '" + id + "'" + " not found");
+      throw bravojs.e;
     }
   }
   else
@@ -673,7 +674,8 @@ bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, c
 	bravojs.pendingModuleDeclarations[id] = null;	/* Mark null so we don't try to run, but also don't try to reload */
         if (typeof onerror !== "undefined")
           onerror();
-        bravojs.warn("Module '" + id + "'" + " not found");
+	bravojs.e = new Error("Module '" + id + "'" + " not found");
+	throw bravojs.e;
       }
     }
   }
