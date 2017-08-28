@@ -834,7 +834,6 @@ bravojs.reset(bravojs.mainModuleDir, bravojs.paths);  /* Use the reset code to i
 })();
 
 /** Diagnostic Aids */
-var print   = bravojs.print;
 if (!window.onerror)
 {
   window.onerror = function bravojs_window_onerror(message, url, line, column, e)
@@ -869,9 +868,9 @@ if (!window.onerror)
     }
     else
     {
-      print("\n * Error: " + message + "\n" + 
-            "      in: " + url + "\n" + 
-            "    line: " + line + "\n");
+      bravojs.print("\n * Error: " + message + "\n" + 
+		    "      in: " + url + "\n" + 
+		    "    line: " + line + "\n");
     }
   }
 }
