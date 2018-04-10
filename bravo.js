@@ -219,8 +219,13 @@ bravojs.URL_toId = function bravojs_URL_toId(moduleURL, relaxValidation)
   moduleURL = moduleURL.replace(/^https?:\/\//i, "//");
   if (!moduleURL.match(/^\/\//))
   {
-    bravojs.e = new Error("Invalid module URL: " + moduleURL);
-    throw bravojs.e;
+    if (moduleURL.match(/^file:\/\//i) && window.location.protocol === "file:")  /* only allow file:// modules when using file:// web page */
+      moduleURL = '//' + moduleURL;
+    else
+    {
+      bravojs.e = new Error("Invalid module URL: " + moduleURL);
+      throw bravojs.e;
+    }
   }
   id = moduleURL.slice(i + 2);
 
