@@ -839,7 +839,6 @@ bravojs.reset(bravojs.mainModuleDir, bravojs.paths);  /* Use the reset code to i
 })();
 
 /** Diagnostic Aids */
-var print   = bravojs.print;
 if (!window.onerror)
 {
   window.onerror = function bravojs_window_onerror(message, url, line, column, e)
