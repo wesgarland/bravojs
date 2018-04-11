@@ -220,16 +220,16 @@ bravojs.URL_toId = function bravojs_URL_toId(moduleURL, relaxValidation)
   if (!moduleURL.match(/^\/\//))
   {
     if (moduleURL.match(/^file:\/\//i) && window.location.protocol === "file:")  /* only allow file:// modules when using file:// web page */
-      moduleURL = '//' + moduleURL;
+      id = moduleURL = '@' + bravojs.realpath(moduleURL.slice(5));
     else
     {
       bravojs.e = new Error("Invalid module URL: " + moduleURL);
       throw bravojs.e;
     }
   }
-  id = moduleURL.slice(i + 2);
+  else
+    id = bravojs.realpath(moduleURL.slice(i + 2));
 
-  id = bravojs.realpath(id);
   if ((i = id.indexOf('?')) != -1)
     id = id.slice(0, i);
   if ((i = id.indexOf('#')) != -1)
@@ -845,7 +845,7 @@ if (!window.onerror)
   window.onerror = function bravojs_window_onerror(message, url, line, column, e)
   { 
     var s;
-
+    
     if (bravojs.errorReporter && bravojs.errorReporter.name !== "bravojs_defaultErrorReporter")
     {
       if (typeof e !== "object")
@@ -862,7 +862,7 @@ if (!window.onerror)
 
       bravojs.errorReporter(e);
     }
-    else if (typeof e === "object" && e.stack && print === bravojs.print)
+    else if (e && typeof e === "object" && e.stack && print === bravojs.print)
     {
       s = "            ".slice(0,e.name.length);
       console.log("%c" + e.name + ": " + e.message,     "font-weight: bold; color: black;");
@@ -874,9 +874,10 @@ if (!window.onerror)
     }
     else
     {
-      print("\n * Error: " + message + "\n" + 
-            "      in: " + url + "\n" + 
-            "    line: " + line + "\n");
+      s =            " * Error: " + message + "\n";
+      if (url)  s += "      in: " + url + "\n";
+      if (line) s += "    line: " + line + "\n";
+      print("\n" + s);
     }
   }
 }
