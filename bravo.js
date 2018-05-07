@@ -1,7 +1,7 @@
 /**
  *  This file implements BravoJS, a CommonJS Modules/2.0 environment.
  *
- *  Copyright (c) 2010, PageMail, Inc.
+ *  Copyright (c) 2010-2018, PageMail, Inc.
  *  Wes Garland, wes@page.ca
  *  MIT License
  */
@@ -16,10 +16,18 @@ if (!bravojs.hasOwnProperty("errorReporter"))
 {
   bravojs.errorReporter = function bravojs_defaultErrorReporter(e)
   {
-    alert(" * BravoJS: " + e.name + " - " + e.message + " at " + e.fileName + "@" + e.lineNumber + "\n\n" + e.stack);
+    if (typeof alert === "function")
+      alert(" * BravoJS: " + e.name + " - " + e.message + " at " + e.fileName + "@" + e.lineNumber + "\n\n" + e.stack);
+    else if (console && console.error)
+      console.error(" * BravoJS: " + e.name + " - " + e.message + " at " + e.fileName + "@" + e.lineNumber + "\n\n" + e.stack);
     throw e;
   }
 }
+
+if (typeof window === "undefined")
+  bravojs.global = this;
+else
+  bravojs.global = window;
 
 /** Reset the environment so that a new main module can be loaded */
 bravojs.reset = function bravojs_reset(mainModuleDir, paths)
@@ -34,8 +42,24 @@ bravojs.reset = function bravojs_reset(mainModuleDir, paths)
   delete bravojs.scriptTagMemoIE;
 
   /* Extra-module environment */
-  window.require = bravojs.requireFactory(bravojs.mainModuleDir);
-  window.module  = new bravojs.Module('', []);
+  bravojs.global.require = bravojs.requireFactory(bravojs.mainModuleDir);
+  bravojs.global.module  = new bravojs.Module('', []);
+
+/* Module.declare function which handles main modules inline SCRIPT tags.
+ * This function gets deleted as soon as it runs, allowing the module.declare
+ * from the prototype take over. Modules created from this function have
+ * the empty string as module.id.
+ */
+bravojs.global.module.declare = function bravojs_main_module_declare(dependencies, moduleFactory)
+{
+  if (typeof dependencies === "function")
+  {
+    moduleFactory = dependencies;
+    dependencies = [];
+  }
+
+  bravojs.initializeMainModule(dependencies, moduleFactory, '');
+}
 }
 
 /** Print to text to stdout */
@@ -49,7 +73,7 @@ bravojs.print = function bravojs_print()
     output += arguments[i] + (i===arguments.length - 1 ? "" : " ");
   output.replace(/\t/, "        ");
 
-  if ((stdout = document.getElementById('stdout')))
+  if (typeof document !== "undefined" && (stdout = document.getElementById('stdout')))
   {
     output += "\n";
 
@@ -108,8 +132,10 @@ bravojs.realpath = function bravojs_realpath(path)
   var newPath = [];
   var i;
 
-  if (path.charAt(path.length - 1) === '/')
-    oldPath.push("INDEX");
+  if (oldPath[0] === "")
+    newPath[0] = "";
+  if (oldPath[oldPath.length - 1] === "")
+    oldPath[oldPath.length - 1] = ".";
 
   for (i = 0; i < oldPath.length; i++)
   {
@@ -128,7 +154,6 @@ bravojs.realpath = function bravojs_realpath(path)
     newPath.push(oldPath[i]);
   }
 
-  newPath.unshift('');
   return newPath.join('/');
 }
 
@@ -172,7 +197,7 @@ bravojs.makeModuleId = function bravojs_makeModuleId(relativeModuleDir, moduleId
 
   if (typeof moduleIdentifier !== "string")
   {
-    bravojs.e = new Error("Invalid module identifier: " + moduleIdentifier.toSource());
+    bravojs.e = new Error("Invalid module identifier: " + (typeof moduleIdentifier === "object" ? JSON.stringify(moduleIdentifier) : moduleIdentifier));
     throw bravojs.e;
   }
 
@@ -195,12 +220,15 @@ bravojs.makeModuleId = function bravojs_makeModuleId(relativeModuleDir, moduleId
      * unassisted HTTP.
      */
     if (bravojs.paths.length === 0)
+    {
       id = bravojs.mainModuleDir + "/" + moduleIdentifier;
+    }
     else
     {
       if (bravojs.paths.length !== 1)
 	throw new Error("Maximum path length (1) exceeded for require.paths!");
-      id = bravojs.paths[0] + "/" + moduleIdentifier;
+      id = bravojs.paths[0] + (bravojs.paths[0] ? "/" : "") + moduleIdentifier;
+      return id;
     }
   }
 
@@ -320,9 +348,7 @@ bravojs.provideModule = function bravojs_provideModule(dependencies, moduleFacto
     require.memoize(id, dependencies, moduleFactory);
 
   if (dependencies)
-  {
     module.provide(bravojs.normalizeDependencyArray(dependencies, id), callback);
-  }
   else
   {
     if (callback)
@@ -544,11 +570,11 @@ bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies,
     bravojs.provideModule(dependencies, moduleFactory, stm.id, stm.callback);    
     return;
   }
-
+ 
   if (stm)
     throw new Error("Bug");
 
-  if (document.addEventListener)	/* non-old-IE, defer work to script's onload event which will happen immediately */
+  if (typeof document !== "undefined" && document.addEventListener)	/* non-old-IE, defer work to script's onload event which will happen immediately */
   {
     bravojs.scriptTagMemo = { dependencies: dependencies, moduleFactory: moduleFactory };
     return;
@@ -629,8 +655,8 @@ bravojs.Module.prototype.provide = function bravojs_Module_provide(dependencies,
  */
 bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, callback, onerror)
 {
-  if (window.module.hasOwnProperty("declare"))
-    delete window.module.declare;
+  if (bravojs.global.module.hasOwnProperty("declare"))
+    delete bravojs.global.module.declare;
 
   var script = document.createElement('SCRIPT');
   script.setAttribute("type","text/javascript");
@@ -819,11 +845,14 @@ bravojs.reset(bravojs.mainModuleDir, bravojs.paths);  /* Use the reset code to i
   var i;
   var script;
 
+  if (typeof bravojs.url !== "undefined")
+    return;
+
   script = document.getElementById("BravoJS");
   if (!script)
     script = document.getElementsByTagName("SCRIPT")[0];
-
   bravojs.url = script.src;
+  
   i = bravojs.url.indexOf("?");
   if (i !== -1)
     bravojs.url = bravojs.url.slice(0,i);
@@ -839,9 +868,9 @@ bravojs.reset(bravojs.mainModuleDir, bravojs.paths);  /* Use the reset code to i
 })();
 
 /** Diagnostic Aids */
-if (!window.onerror)
+if (!bravojs.global.onerror)
 {
-  window.onerror = function bravojs_window_onerror(message, url, line, column, e)
+  bravojs.global.onerror = function bravojs_window_onerror(message, url, line, column, e)
   { 
     var s;
     
@@ -861,7 +890,7 @@ if (!window.onerror)
 
       bravojs.errorReporter(e);
     }
-    else if (e && typeof e === "object" && e.stack && print === bravojs.print)
+    else if (e && typeof e === "object" && e.stack && typeof print !== "undefined" && print === bravojs.print)
     {
       s = "            ".slice(0,e.name.length);
       console.log("%c" + e.name + ": " + e.message,     "font-weight: bold; color: black;");
@@ -876,25 +905,9 @@ if (!window.onerror)
       s =            " * Error: " + message + "\n";
       if (url)  s += "      in: " + url + "\n";
       if (line) s += "    line: " + line + "\n";
-      print("\n" + s);
+      bravojs.print("\n" + s);
     }
   }
-}
-
-/* Module.declare function which handles main modules inline SCRIPT tags.
- * This function gets deleted as soon as it runs, allowing the module.declare
- * from the prototype take over. Modules created from this function have
- * the empty string as module.id.
- */
-module.declare = function bravojs_main_module_declare(dependencies, moduleFactory)
-{
-  if (typeof dependencies === "function")
-  {
-    moduleFactory = dependencies;
-    dependencies = [];
-  }
-
-  bravojs.initializeMainModule(dependencies, moduleFactory, '');
 }
 
 } catch(e) { bravojs.errorReporter(e); }
