@@ -347,7 +347,7 @@ bravojs.provideModule = function bravojs_provideModule(dependencies, moduleFacto
   if (moduleFactory)
     require.memoize(id, dependencies, moduleFactory);
 
-  if (dependencies)
+  if (dependencies && dependencies.length > 0)
     module.provide(bravojs.normalizeDependencyArray(dependencies, id), callback);
   else
   {
