@@ -370,8 +370,30 @@ bravojs.initializeModule = function bravojs_initializeModule(id)
   delete bravojs.pendingModuleDeclarations[id];
 
   require = bravojs.requireFactory(moduleDir, dependencies);
-  exports = bravojs.requireMemo[id] = {};
   module  = new bravojs.Module(id, dependencies);
+
+  if (bravojs.securableModules === true)
+    exports = bravojs.requireMemo[id] = {};
+  else
+  {
+    /* Add node-style replaceable module.exports, unless we need to
+     * maintain compatibility with the Securable Modules specification
+     * (CommonJS/1.0 precursor).
+     */
+    function replaceExports(newExports)
+    {
+      exports = bravojs.requireMemo[id] = newExports;
+    }
+
+    Object.defineProperty(module, "exports",
+                          {
+                            configurable:       true,
+                            enumerable:         true,
+                            set:                replaceExports
+                          });
+
+    module.exports = {};
+  }
 
   moduleFactory(require, exports, module);
 }
