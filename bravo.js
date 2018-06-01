@@ -874,8 +874,8 @@ bravojs.reset(bravojs.mainModuleDir, bravojs.paths);  /* Use the reset code to i
   script = document.getElementById("BravoJS");
   if (!script)
   {
-      scripts = document.getElementsByTagName("SCRIPT");
-      script = scripts[scripts.length-1];
+    scripts = document.getElementsByTagName("SCRIPT");
+    script = scripts[scripts.length-1];
   }
 
   bravojs.url = script.src;
