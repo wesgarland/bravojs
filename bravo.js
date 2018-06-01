@@ -738,11 +738,15 @@ bravojs.reset();
 (function bravojs_setURL()
 {
   var i;
+  var scripts;
   var script;
-
+  
   script = document.getElementById("BravoJS");
   if (!script)
-    script = document.getElementsByTagName("SCRIPT")[0];
+  {
+      scripts = document.getElementsByTagName("SCRIPT");
+      script = scripts[scripts.length-1];
+  }
 
   bravojs.url = script.src;
   i = bravojs.url.indexOf("?");
@@ -753,7 +757,7 @@ bravojs.reset();
     bravojs.url = bravojs.url.slice(0,i);
 
   if (bravojs.basename(bravojs.url) !== "bravo.js")
-    throw new Error("Could not determine BravoJS URL. BravoJS must be the first script, or have id='BravoJS'");
+    throw new Error("Could not determine BravoJS URL. You can fix this by giving your script tag id='BravoJS'");
 })();
 
 /** Diagnostic Aids */
