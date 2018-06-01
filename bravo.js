@@ -865,6 +865,7 @@ bravojs.reset(bravojs.mainModuleDir, bravojs.paths);  /* Use the reset code to i
 (function bravojs_setURL()
 {
   var i;
+  var scripts;
   var script;
 
   if (typeof bravojs.url !== "undefined")
@@ -872,7 +873,11 @@ bravojs.reset(bravojs.mainModuleDir, bravojs.paths);  /* Use the reset code to i
 
   script = document.getElementById("BravoJS");
   if (!script)
-    script = document.getElementsByTagName("SCRIPT")[0];
+  {
+      scripts = document.getElementsByTagName("SCRIPT");
+      script = scripts[scripts.length-1];
+  }
+
   bravojs.url = script.src;
   
   i = bravojs.url.indexOf("?");
@@ -884,7 +889,7 @@ bravojs.reset(bravojs.mainModuleDir, bravojs.paths);  /* Use the reset code to i
 
   if (bravojs.basename(bravojs.url) !== "bravo.js")
   {
-    bravojs.e = new Error("Could not determine BravoJS URL. BravoJS must be the first script, or have id='BravoJS'");
+    bravojs.e = throw new Error("Could not determine BravoJS URL. You can fix this by giving your script tag id='BravoJS'"); 
     throw bravojs.e;
   }
 })();
