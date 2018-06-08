@@ -814,6 +814,8 @@ bravojs.initializeMainModule = function bravojs_initializeMainModule(dependencie
                                main = require(moduleIdentifier);
                                delete module.constructor.prototype.main;
                                module.constructor.prototype.main = main;
+			       if (bravojs.onMainModuleEvaluated)
+				 window.setTimeout(bravojs.onMainModuleEvaluated, 0);
 			     });
      })
   ); 
@@ -889,7 +891,7 @@ bravojs.reset(bravojs.mainModuleDir, bravojs.paths);  /* Use the reset code to i
 
   if (bravojs.basename(bravojs.url) !== "bravo.js")
   {
-    bravojs.e = throw new Error("Could not determine BravoJS URL. You can fix this by giving your script tag id='BravoJS'"); 
+    bravojs.e = new Error("Could not determine BravoJS URL. You can fix this by giving your script tag id='BravoJS'"); 
     throw bravojs.e;
   }
 })();
