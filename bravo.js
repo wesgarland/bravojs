@@ -25,7 +25,7 @@ if (!bravojs.hasOwnProperty("errorReporter"))
 }
 
 if (typeof window === "undefined")
-  bravojs.global = this;
+  bravojs.global = self;
 else
   bravojs.global = window;
 
@@ -815,7 +815,7 @@ bravojs.initializeMainModule = function bravojs_initializeMainModule(dependencie
                                delete module.constructor.prototype.main;
                                module.constructor.prototype.main = main;
 			       if (bravojs.onMainModuleEvaluated)
-				 window.setTimeout(bravojs.onMainModuleEvaluated, 0);
+				 bravojs.global.setTimeout(bravojs.onMainModuleEvaluated, 0);
 			     });
      })
   ); 
