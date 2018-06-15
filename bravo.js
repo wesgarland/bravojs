@@ -815,7 +815,7 @@ bravojs.initializeMainModule = function bravojs_initializeMainModule(dependencie
                                delete module.constructor.prototype.main;
                                module.constructor.prototype.main = main;
 			       if (bravojs.onMainModuleEvaluated)
-				 bravojs.global.setTimeout(bravojs.onMainModuleEvaluated, 0);
+				 bravojs.onMainModuleEvaluated();
 			     });
      })
   ); 
