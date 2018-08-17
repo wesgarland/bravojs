@@ -1,7 +1,7 @@
 {
   "name": "bravojs",
   "description": "Implementation of CommonJS Modules/2.0",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "main": "bravo.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

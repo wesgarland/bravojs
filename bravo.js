@@ -185,8 +185,30 @@ bravojs.dirname = function bravojs_dirname(path)
   return s;
 }
 
+/** Find a global module within the requireMemo or pendingModuleDeclarations 
+ *  @param   moduleIdentifer   A module identifier
+ *  @returns the module id (if global and found on path), otherwise null
+ */
+bravojs.findModule = function bravojs_findModule(moduleIdentifier)
+{
+  var dir, i;
+
+  if (moduleIdentifier.charAt(0) === '.')
+    return null
+  
+  for (i=0; i < bravojs.paths.length; i++)
+  {
+    if ((bravojs.requireMemo.hasOwnProperty(bravojs.paths[i] + '/' + moduleIdentifier)) ||
+	(bravojs.pendingModuleDeclarations.hasOwnProperty(bravojs.paths[i] + '/' + moduleIdentifier)))
+      return bravojs.paths[i] + '/' + moduleIdentifier;
+  }
+
+  return null
+}
+
 /** Turn a module identifier and module directory into a canonical
- *  module.id.
+ *  module.id. Global module identifiers are resolved against 
+ *  require.paths and discovered by looking at the module memos.
  */
 bravojs.makeModuleId = function bravojs_makeModuleId(relativeModuleDir, moduleIdentifier)
 {
@@ -214,24 +236,13 @@ bravojs.makeModuleId = function bravojs_makeModuleId(relativeModuleDir, moduleId
   }
   else
   {
-    /* Top-level module. If there are no require.paths, make it relative
-     * to the main module; otherwise use the first path entry. We do not
-     * support multiple paths because of the cost of path-searching over
-     * unassisted HTTP.
-     */
-    if (bravojs.paths.length === 0)
-    {
-      id = bravojs.mainModuleDir + "/" + moduleIdentifier;
-    }
-    else
-    {
-      if (bravojs.paths.length !== 1)
-	throw new Error("Maximum path length (1) exceeded for require.paths!");
-      id = bravojs.paths[0] + (bravojs.paths[0] ? "/" : "") + moduleIdentifier;
-      return id;
-    }
+    id = bravojs.findModule(moduleIdentifier)
+    if (id === null && typeof bravojs.globalResolveHook === "function")
+      id = bravojs.globalResolveHook(moduleIdentifier)
+    if (id === null)
+      id = bravojs.mainModuleDir + '/' + moduleIdentifier;
   }
-
+  
   return bravojs.realpath(id);
 }
 
@@ -665,7 +676,7 @@ bravojs.Module.prototype.provide = function bravojs_Module_provide(dependencies,
 
   module.load(dependencies[0], function bravojs_lambda_provideNextDep() { self(dependencies.slice(1), callback, onerror) }, onerror);
 }
-
+ 
 /** A module.load suitable for a generic web-server back end. The module is
  *  loaded by injecting a SCRIPT tag into the DOM.
  *
@@ -825,10 +836,10 @@ bravojs.initializeMainModule = function bravojs_initializeMainModule(dependencie
  *  @param	dependencies		[optional]	A list of dependencies to sastify before running the mdoule
  *  @param	moduleIdentifier	moduleIdentifier, relative to dirname(window.location.href). This function
  *					adjusts the module path such that the program module's directory is the
- *					top-level module directory before the dependencies are resolved.
+ *					global module directory before the dependencies are resolved.
  *  @param	callback		[optional]	Callback to invoke once the main module has been initialized
  */
-bravojs.runExternalMainModule = function bravojs_runExternalProgram(dependencies, moduleIdentifier, callback)
+bravojs.runExternalMainModule = function bravojs_runExternalMainModule(dependencies, moduleIdentifier, callback)
 {
   if (arguments.length === 1 || typeof moduleIdentifier === "function")
   {
@@ -844,7 +855,7 @@ bravojs.runExternalMainModule = function bravojs_runExternalProgram(dependencies
   else
     bravojs.mainModuleDir = bravojs.dirname(bravojs.URL_toId(window.location.href + ".js"), true) + "/" + bravojs.dirname(moduleIdentifier);
 
-  moduleIdentifier = bravojs.basename(moduleIdentifier);
+  moduleIdentifier = bravojs.mainModuleDir + '/' + bravojs.basename(moduleIdentifier);
 
   bravojs.es5_shim_then(
       function() {
