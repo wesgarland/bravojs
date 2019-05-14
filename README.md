@@ -1,7 +1,7 @@
-﻿page# BravoJS
+# Welcome to BravoJS
 
-Copyright (c) 2010-2018 PageMail, Inc.
-Copyright (c) 2019 Kings Distributed Systems
+* Copyright (c) 2010-2018 PageMail, Inc.
+* Copyright (c) 2019 Kings Distributed Systems
 
 Released under the terms of the MIT License.
 
@@ -26,19 +26,6 @@ wes@kingsds.network
 ## Compatibility
 It is anticipated that core BravoJS continues to work with all browsers, going back as far as Internet Explorer 6, however, we are not testing on obsolete platforms at this time. 
 
-## Manifest
-|  |  | 
-|--|--|
-|bravo.js|                The CommonJS Modules/2.0 environment with default loader|
-|reference/CommonJS Modules-2.0-draft-8.pdf| The CommonJS Modules/2.0-draft 8 specification|
-|plugins/wonkoll|         A module loader plug-in implemented with LazyLoad.js|
-|plugins/fastload|        A module loader plug-in which implements a multi-module                        transport. Includes server-side component for GPSEE.|
-|plugins/jquery-loader|   A module loader plug-in which loads modules over JQuery's                        version of XHR|
-|demos/area|              A web app which calculates the area of a rectangle|
-|demos/iojs_tests|        An environment to exercise the Modules/1.0 test suite|
-|demos/readme|		  A sample module and web app (see below)
-|utility/cjs2-node.js|	  A shim to run CommonJS Modules/2.0 modules in NodeJS|
-
 ## Sample Module
 ```javascript
 module.declare(["list", "of", "dependencies"], function (require, exports, modules) {
@@ -47,7 +34,7 @@ module.declare(["list", "of", "dependencies"], function (require, exports, modul
   }
 })
 ```
-## Sample Web Document
+## Sample Web Application
 ```html
 <html>
 <head>
@@ -64,8 +51,12 @@ module.declare(["list", "of", "dependencies"], function (require, exports, modul
 </head>
 <body uiState="loading">
   <form onsubmit="return module.main.validate(this)">
-    Click This: <input type="checkbox" id="veryNiceCheckbox" onclick="require('sampleModule').clickyClick(this)"><br>
-    Type Here: <input type="text" name="typing"> <input type="submit" value="OK">
+    Click This: 
+    <input type="checkbox" id="veryNiceCheckbox" 
+           onclick="require('./sampleModule').clickyClick(this)"><br>
+    Type Here: 
+    <input type="text" name="typing"> 
+    <input type="submit" value="OK">
   </form>
 </body>
 <script>
@@ -81,3 +72,16 @@ module.declare(["./sampleModule"], function(require, exports, module) {
 </script>
 </html>
 ```
+## Manifest
+|Filename |Description  | 
+|--|--|
+|bravo.js|                The CommonJS Modules/2.0 environment with default loader|
+|reference/CommonJS Modules-2.0-draft-8.pdf| The CommonJS Modules/2.0-draft 8 specification|
+|plugins/wonkoll|         A module loader plug-in implemented with LazyLoad.js|
+|plugins/fastload|        A module loader plug-in which implements a multi-module                        transport. Includes server-side component for GPSEE.|
+|plugins/jquery-loader|   A module loader plug-in which loads modules over JQuery's                        version of XHR|
+|demos/area|              A web app which calculates the area of a rectangle|
+|demos/iojs_tests|        An environment to exercise the Modules/1.0 test suite|
+|demos/readme|		  A sample module and web app (see below)
+|utility/cjs2-node.js|	  A shim to run CommonJS Modules/2.0 modules in NodeJS|
+

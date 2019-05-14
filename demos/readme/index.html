@@ -14,7 +14,7 @@
 </head>
 <body uiState="loading">
   <form onsubmit="return module.main.validate(this)">
-    Click This: <input type="checkbox" id="veryNiceCheckbox" onclick="require('sampleModule').clickyClick(this)"><br>
+    Click This: <input type="checkbox" id="veryNiceCheckbox" onclick="require('./sampleModule').clickyClick(this)"><br>
     Type Here: <input type="text" name="typing"> <input type="submit" value="OK">
   </form>
 </body>
