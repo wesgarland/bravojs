@@ -2,7 +2,7 @@
  *  @file       cjs2-node.js            Compatibility layer for Node.js which allows
  *                                      us to execute basic CommonJS Modules/2.0-d8
  *                                      modules within the Node environment.
- *  Usage:  require("./cjs2-node")
+ *  Usage:  require("cjs2-node")
  *          in the main program as early as possible (before any calls to
  *          module.declare or require)
  *

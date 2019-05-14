@@ -8,6 +8,7 @@ Modules/2.0
 
 The current draft this code is based on is located at 
 https://bitbucket.org/wesgarland/bravojs/downloads/commonjs%20modules%202.0-8.pdf
+and has been included in the references directory.
 
 Caveat User: BravoJS is based on an early draft of an unratified CommonJS 
 specification. This means that using this product as it stands today will 
@@ -27,6 +28,8 @@ bravo.js		The CommonJS Modules/2.0 environment with default loader
 plugins/wonkoll		A module loader plug-in implemented with LazyLoad.js
 plugins/fastload	A module loader plug-in which implements a multi-module
 			transport. Includes server-side component for GPSEE.
+plugins/jquery-loader	A module loader plug-in which loads modules over JQuery's
+			version of XHR
 demos/area		A web page which calculates the area of a rectangle
 demos/iojs_tests	An environment to exercise the Modules/1.0 test suite
                     
