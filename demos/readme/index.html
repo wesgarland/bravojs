@@ -1,0 +1,32 @@
+<html>
+<head>
+  <!-- This is the code from the main README.md -->
+  <script id="bravojs" src="../../bravo.js"></script>
+  <style type="text/css">
+    BODY[uiState="loading"] * {
+      pointer-events: none;
+    }
+    BODY[uiState="loading"], BODY[uiState="loading"] * {
+      opacity: 0.5;
+      cursor: wait !important; 
+    }	
+  </style>
+</head>
+<body uiState="loading">
+  <form onsubmit="return module.main.validate(this)">
+    Click This: <input type="checkbox" id="veryNiceCheckbox" onclick="require('sampleModule').clickyClick(this)"><br>
+    Type Here: <input type="text" name="typing"> <input type="submit" value="OK">
+  </form>
+</body>
+<script>
+/** Main module */
+module.declare(["./sampleModule"], function(require, exports, module) {
+  document.body.setAttribute('uiState', 'ready')
+
+  exports.validate = function(form) {
+    console.log("You typed", form.elements['typing'].value)
+    return false; /* prevent form from submitting */
+  }
+})
+</script>
+</html>
