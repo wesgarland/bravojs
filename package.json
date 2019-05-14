@@ -1,14 +1,14 @@
 {
   "name": "bravojs",
   "description": "Implementation of CommonJS Modules/2.0",
-  "version": "1.0.9",
+  "version": "1.0.11",
   "main": "bravo.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "hg::https://wesgarland@bitbucket.org/wesgarland/bravojs"
+    "url": "git+https://github.com/wesgarland/bravojs"
   },
   "keywords": [
     "CommonJS"
