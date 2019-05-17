@@ -57,8 +57,7 @@ module.declare(["list", "of", "dependencies"], function (require, exports, modul
     <input type="text" name="typing"> 
     <input type="submit" value="OK">
   </form>
-</body>
-<script>
+  <script>
 /** Main module */
 module.declare(["./sampleModule"], function(require, exports, module) {
   document.body.setAttribute('uiState', 'ready')
@@ -68,7 +67,8 @@ module.declare(["./sampleModule"], function(require, exports, module) {
     return false; /* prevent form from submitting */
   }
 })
-</script>
+  </script>
+</body>
 </html>
 ```
 ## Manifest
@@ -81,6 +81,6 @@ module.declare(["./sampleModule"], function(require, exports, module) {
 |plugins/jquery-loader|   A module loader plug-in which loads modules over JQuery's version of XHR|
 |demos/area|              A web app which calculates the area of a rectangle|
 |demos/iojs_tests|        An environment to exercise the Modules/1.0 test suite|
-|demos/readme|		  A sample module and web app (see below)
+|demos/readme|		  A sample module and web app (see above)
 |utility/cjs2-node.js|	  A shim to run CommonJS Modules/2.0 modules in NodeJS|
 

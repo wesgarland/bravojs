@@ -17,8 +17,7 @@
     Click This: <input type="checkbox" id="veryNiceCheckbox" onclick="require('./sampleModule').clickyClick(this)"><br>
     Type Here: <input type="text" name="typing"> <input type="submit" value="OK">
   </form>
-</body>
-<script>
+  <script>
 /** Main module */
 module.declare(["./sampleModule"], function(require, exports, module) {
   document.body.setAttribute('uiState', 'ready')
@@ -28,5 +27,6 @@ module.declare(["./sampleModule"], function(require, exports, module) {
     return false; /* prevent form from submitting */
   }
 })
-</script>
+  </script>
+</body>
 </html>
