@@ -5,7 +5,7 @@
 
 Released under the terms of the MIT License.
 
-BravoJS began life as a reference implementation of an unratified proposed draft for CommonJS Modules/2.0. Note that the CommonJS working group itself is now defacto defunct, meaning that Modules/2.0 will never become a standard.  Other implementations referencing this draft include NobleJS and PINF. The current draft specification  this code is based on has been included in the references directory.
+BravoJS began life as a reference implementation of an unratified proposed draft for CommonJS Modules/2.0. Note that the CommonJS working group itself is now defacto defunct, meaning that Modules/2.0 will never become a standard.  Other implementations referencing this draft include NobleJS (Domenic Denicola) and PINF (Christoph Dorn). The current draft specification  this code is based on has been included in the references directory.
 
 BravoJS is an extensible CommonJS module loader for the web browser and other environments; similar in principle to CommonJS Transport/C  (e.g. RequireJS and AMD), but maintaining complete backwards compatibility with CommonJS Modules/1.1.1 modules, including lazy initialization and correct support for dependency graphs with cycles.
 
@@ -83,4 +83,4 @@ module.declare(["./sampleModule"], function(require, exports, module) {
 |demos/iojs_tests|        An environment to exercise the Modules/1.0 test suite|
 |demos/readme|		  A sample module and web app (see above)
 |utility/cjs2-node.js|	  A shim to run CommonJS Modules/2.0 modules in NodeJS|
-
+|utility/test-cjs2-node.sh|A test runner to run the iojs test suite against cjs2-node.js|
