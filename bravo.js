@@ -665,7 +665,7 @@ bravojs.Module.prototype.provide = function bravojs_Module_provide(dependencies,
     throw bravojs.e;
   }
 
-  dependencies = bravojs.normalizeDependencyArray(dependencies);
+  dependencies = bravojs.normalizeDependencyArray(dependencies, this.id ? this.id : undefined);
 
   if (dependencies.length === 0)
   {
