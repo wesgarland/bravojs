@@ -421,22 +421,7 @@ bravojs.requireModule = function bravojs_requireModule(parentModuleDir, moduleId
     bravojs.initializeModule(id);
 
   if (id === null || !bravojs.requireMemo[id])
-  {
-    bravojs.e = new Error("Module '" + moduleIdentifier + "' is not available.");
-    if (typeof bravojs.e.stack === "string")
-    {
-      a = bravojs.e.stack.split("\n");
-      for (i=0; i < a.length; i++)
-      {
-        if (a[i].match(/^require\(/))
-        {
-          bravojs.e = new Error("Module '" + id + "' is not available.\n > Probable call site: " + a[i+1]);
-          break;
-        }
-      }
-    }
-    throw bravojs.e;
-  }
+    throw bravojs.e = new Error("Module '" + moduleIdentifier + "' is not available.");
 
   return bravojs.requireMemo[id];
 }
@@ -833,7 +818,7 @@ bravojs.initializeMainModule = function bravojs_initializeMainModule(dependencie
 }
 
 /** Run a module which is not declared in the HTML document and make it the program module.
- *  @param      dependencies            [optional]      A list of dependencies to sastify before running the mdoule
+ *  @param      dependencies            [optional]      A list of dependencies to sastify before running the module
  *  @param      moduleIdentifier        moduleIdentifier, relative to dirname(window.location.href). This function
  *                                      adjusts the module path such that the program module's directory is the
  *                                      global module directory before the dependencies are resolved.
