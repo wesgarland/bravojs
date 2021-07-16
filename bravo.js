@@ -2,7 +2,9 @@
  *  This file implements BravoJS, a CommonJS Modules/2.0 environment.
  *
  *  Copyright (c) 2010-2018, PageMail, Inc.
- *  Wes Garland, wes@page.ca
+ *  Copyright (c) 2020-2021, Kings Distributed Systems, Ltd.
+ *
+ *  Wes Garland, wes@page.ca / wes@kingsds.network
  *  MIT License
  */
 var bravojs;                    /**< Namespace object for this implementation */
@@ -11,7 +13,7 @@ if (typeof bravojs === "undefined")
   bravojs = {};
 
 try {
-
+  
 if (!bravojs.hasOwnProperty("errorReporter"))
 {
   bravojs.errorReporter = function bravojs_defaultErrorReporter(e)
@@ -32,6 +34,9 @@ else
 /** Reset the environment so that a new main module can be loaded */
 bravojs.reset = function bravojs_reset(mainModuleDir, paths)
 {
+  if (bravojs.dependencyDebug)
+    console.debug('bravojs::reset');
+  
   bravojs.requireMemo                   = {};   /**< Module exports, indexed by canonical name */
   bravojs.pendingModuleDeclarations     = {};   /**< Module.declare arguments, indexed by canonical name */
   bravojs.paths                         = paths || [];  /**< Backing array for require.paths */
@@ -45,6 +50,11 @@ bravojs.reset = function bravojs_reset(mainModuleDir, paths)
   bravojs.global.require = bravojs.requireFactory(bravojs.mainModuleDir);
   bravojs.global.module  = new bravojs.Module('', []);
 
+  /* Dependencies which need to be satisfied before main module is loaded,
+   * but which aren't direct dependencies of the main module. Once this is
+   * undefined, the main module has been loaded.
+   */
+  bravojs.extraMainModuleDependencies = [];
   /* Module.declare function which handles main modules inline SCRIPT tags.
    * This function gets deleted as soon as it runs, allowing the module.declare
    * from the prototype take over. Modules created from this function have
@@ -52,12 +62,17 @@ bravojs.reset = function bravojs_reset(mainModuleDir, paths)
    */
   bravojs.global.module.declare = function bravojs_main_module_declare(dependencies, moduleFactory)
   {
+    if (bravojs.dependencyDebug)
+      console.debug('Running main module module.declare');
+    
     if (typeof dependencies === "function")
     {
       moduleFactory = dependencies;
       dependencies = [];
     }
 
+    dependencies = dependencies.concat(bravojs.extraMainModuleDependencies);
+    delete bravojs.extraMainModuleDependencies;
     bravojs.initializeMainModule(dependencies, moduleFactory, '');
   }
 }
@@ -341,6 +356,11 @@ bravojs.normalizeDependencyArray = function bravojs_normalizeDependencyArray(dep
   return normalizedDependencies;
 }
 
+bravojs.memoize = function bravojs_memoize(id, dependencies, moduleFactory)
+{
+  bravojs.pendingModuleDeclarations[id] = { moduleFactory: moduleFactory, dependencies: dependencies };
+}
+
 /** Provide a module to the environment
  *  @param      dependencies            A dependency array
  *  @param      moduleFactoryFunction   The function which will eventually be invoked
@@ -356,7 +376,7 @@ bravojs.provideModule = function bravojs_provideModule(dependencies, moduleFacto
 {
   /* Memoize the the factory, satistfy the dependencies, and invoke the callback */
   if (moduleFactory)
-    require.memoize(id, dependencies, moduleFactory);
+    bravojs.memoize(id, dependencies, moduleFactory);
 
   if (dependencies && dependencies.length > 0)
     module.provide(bravojs.normalizeDependencyArray(dependencies, id), callback);
@@ -485,14 +505,43 @@ bravojs.requireFactory = function bravojs_requireFactory(moduleDir, dependencies
     return window.location.protocol + "/" + id + ".js";
   }
 
+  /**
+   * We can cause problems with cyclical dependency graphs here - we should never
+   * transfer deps onto main module - but current module.declare for main module
+   * is implemented in an ugly side-effecty way that makes this necessary until it
+   * is fixed.
+   */
   newRequire.memoize = function require_memoize(id, dependencies, moduleFactory)
   {
-    bravojs.pendingModuleDeclarations[id] = { moduleFactory: moduleFactory, dependencies: dependencies };
+    if (typeof bravojs.pendingModuleDeclarations[id] === 'undefined')
+    {
+      bravojs.pendingModuleDeclarations[id] = { moduleFactory: moduleFactory, dependencies: dependencies };
+      if (!bravojs.extraMainModuleDependencies) /* main module already began */
+        bravojs.provideModule(dependencies, moduleFactory, id);
+      else
+      {
+        bravojs.provideModule([], moduleFactory, id);
+        dependencies.forEach((dep) => bravojs.extraMainModuleDependencies.push(dep));
+      }
+    }
   }
 
   newRequire.isMemoized = function require_isMemoized(id)
   {
     return (bravojs.pendingModuleDeclarations[id] || bravojs.requireMemo[id]) ? true : false;
+  }
+
+  /** Node.js compat */
+  newRequire.resolve = function require_resolve(id)
+  {
+    var canonicalIdentifier = newRequire.id(id);
+    if (newRequire.isMemoized(canonicalIdentifier))
+      return canonicalIdentifier;
+    
+    const error = new Error(`Cannot find module '${id}'`);
+    error.code = 'MODULE_NOT_FOUND';
+
+    throw error;
   }
 
   newRequire.paths = bravojs.paths;
@@ -579,6 +628,9 @@ bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies,
     dependencies = [];
   }
 
+  if (bravojs.dependencyDebug)
+    console.debug('module declare for factory', moduleFactory.name, 'in', document.currentScript.src);
+
   stm = bravojs.scriptTagMemo;
   if (stm && stm.id === '')             /* Static HTML module */
   {
@@ -590,7 +642,9 @@ bravojs.Module.prototype.declare = function bravojs_Module_declare(dependencies,
   }
 
   if (stm)
-    throw new Error("Bug");
+  {
+    console.warn(new Error('unexpected scriptTagMemo for ' + stm.id), stm);
+  }
 
   if (typeof document !== "undefined" && document.addEventListener)     /* non-old-IE, defer work to script's onload event which will happen immediately */
   {
