@@ -238,7 +238,7 @@ bravojs.makeModuleId = function bravojs_makeModuleId(relativeModuleDir, moduleId
     throw bravojs.e;
   }
 
-  if (moduleIdentifier.charAt(0) === '/')
+  if ((moduleIdentifier[0] === '/') || (moduleIdentifier[0] === '@' && window.location.protocol === "file:"))  /* only allow file:// modules when using file:// web page */
   {
     /* Absolute path. Not required by CommonJS but it makes dependency list optimization easier */
     id = moduleIdentifier;
@@ -502,6 +502,9 @@ bravojs.requireFactory = function bravojs_requireFactory(moduleDir, dependencies
       throw bravojs.e;
     }
 
+    if (id[0] === '@' && window.location.protocol === 'file:')
+      return 'file://' + id.slice(1) + '.js';
+
     return window.location.protocol + "/" + id + ".js";
   }
 
@@ -733,6 +736,9 @@ bravojs.Module.prototype.load = function bravojs_Module_load(moduleIdentifier, c
   var script = document.createElement('SCRIPT');
   script.setAttribute("type","text/javascript");
   script.setAttribute("src", require.canonicalize(moduleIdentifier) + "?" + (bravojs.debug === true ? Date.now() : (bravojs.debug ? bravojs.debug : "1")));
+
+  if (bravojs.dependencyDebug)
+    console.debug('Loading module', moduleIdentifier, 'from', require.canonicalize(moduleIdentifier));
 
   if (document.addEventListener)        /* Non-old-IE; see bravojs_Module_declare */
   {
