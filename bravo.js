@@ -41,7 +41,7 @@ bravojs.reset = function bravojs_reset(mainModuleDir, paths)
   bravojs.pendingModuleDeclarations     = {};   /**< Module.declare arguments, indexed by canonical name */
   bravojs.paths                         = paths || [];  /**< Backing array for require.paths */
   bravojs.mainModuleDir                 = mainModuleDir
-                                          || bravojs.dirname(bravojs.URL_toId(window.location.href + ".js", true)); /**< Current directory for relative paths from main module */
+                                          || bravojs.dirname(bravojs.URL_toId(window?.location?.href + ".js", true)); /**< Current directory for relative paths from main module */
   delete bravojs.Module.prototype.main;
   delete bravojs.scriptTagMemo;
   delete bravojs.scriptTagMemoIE;
@@ -238,13 +238,12 @@ bravojs.makeModuleId = function bravojs_makeModuleId(relativeModuleDir, moduleId
     throw bravojs.e;
   }
 
-  if ((moduleIdentifier[0] === '/') || (moduleIdentifier[0] === '@' && window.location.protocol === "file:"))  /* only allow file:// modules when using file:// web page */
+  if ((moduleIdentifier[0] === '/') || (moduleIdentifier[0] === '@' && window.?location?.protocol === "file:"))  /* only allow file:// modules when using file:// web page */
   {
     /* Absolute path. Not required by CommonJS but it makes dependency list optimization easier */
     id = moduleIdentifier;
   }
-  else
-  if ((moduleIdentifier.indexOf("./") == 0) || (moduleIdentifier.indexOf("../") == 0))
+  else if ((moduleIdentifier.indexOf("./") == 0) || (moduleIdentifier.indexOf("../") == 0))
   {
     /* Relative module path -- relative to relativeModuleDir */
     id = relativeModuleDir + "/" + moduleIdentifier;
@@ -273,7 +272,7 @@ bravojs.URL_toId = function bravojs_URL_toId(moduleURL, relaxValidation)
   moduleURL = moduleURL.replace(/^https?:\/\//i, "//");
   if (!moduleURL.match(/^\/\//))
   {
-    if (moduleURL.match(/^file:\/\//i) && window.location.protocol === "file:")  /* only allow file:// modules when using file:// web page */
+    if (moduleURL.match(/^file:\/\//i) && window?.location?.protocol === "file:")  /* only allow file:// modules when using file:// web page */
       id = moduleURL = '@' + bravojs.realpath(moduleURL.slice(5));
     else
     {
@@ -502,10 +501,10 @@ bravojs.requireFactory = function bravojs_requireFactory(moduleDir, dependencies
       throw bravojs.e;
     }
 
-    if (id[0] === '@' && window.location.protocol === 'file:')
+    if (id[0] === '@' && window?.location?.protocol === 'file:')
       return 'file://' + id.slice(1) + '.js';
 
-    return window.location.protocol + "/" + id + ".js";
+    return (window?.location?.protocol || '') + "//" + id + ".js";
   }
 
   /**
@@ -898,7 +897,7 @@ bravojs.runExternalMainModule = function bravojs_runExternalMainModule(dependenc
   if (moduleIdentifier.charAt(0) === '/')
     bravojs.mainModuleDir = bravojs.dirname(moduleIdentifier);
   else
-    bravojs.mainModuleDir = bravojs.dirname(bravojs.URL_toId(window.location.href + ".js"), true) + "/" + bravojs.dirname(moduleIdentifier);
+    bravojs.mainModuleDir = bravojs.dirname(bravojs.URL_toId(window?.location?.href + ".js"), true) + "/" + bravojs.dirname(moduleIdentifier);
 
   moduleIdentifier = bravojs.mainModuleDir + '/' + bravojs.basename(moduleIdentifier);
 
